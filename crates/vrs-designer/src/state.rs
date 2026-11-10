@@ -20,6 +20,8 @@ pub struct HandlerRequest {
 #[derive(Debug, Default)]
 pub struct DesignerOutput {
     pub open_handler: Option<HandlerRequest>,
+    /// Importer une image dans `resources/` pour ce contrôle (PictureBox).
+    pub import_image: Option<String>,
     /// Le document a changé pendant cette image.
     pub changed: bool,
 }
@@ -47,6 +49,8 @@ pub(crate) enum DragOp {
 pub struct DesignerState {
     pub doc: FormDocument,
     pub path: PathBuf,
+    /// Racine du projet (pour les ressources : images…).
+    pub project_root: PathBuf,
     /// Noms des contrôles sélectionnés (le premier est la référence d'alignement).
     pub selection: Vec<String>,
     /// Composant choisi dans la boîte à outils, en attente de placement.
@@ -74,6 +78,11 @@ impl DesignerState {
             saved: doc.clone(),
             doc,
             path: path.to_path_buf(),
+            project_root: path
+                .parent()
+                .and_then(Path::parent)
+                .map(Path::to_path_buf)
+                .unwrap_or_default(),
             selection: Vec::new(),
             pending_tool: None,
             preview: false,

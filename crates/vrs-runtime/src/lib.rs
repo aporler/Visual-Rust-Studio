@@ -343,6 +343,26 @@ pub struct PanelState {
     pub anchor: Anchor,
 }
 
+/// État d'une image (`PictureBox`). L'image est intégrée à l'exécutable :
+/// `Some(egui::include_image!("../../resources/logo.png"))`.
+#[derive(Clone, Debug)]
+pub struct PictureBoxState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
+    pub image: Option<egui::ImageSource<'static>>,
+}
+
 macro_rules! impl_state_new {
     ($($t:ident { $($f:ident : $v:expr),* }),* $(,)?) => {$(
         impl $t {
@@ -393,6 +413,7 @@ impl_state_new!(
     },
     GroupBoxState {},
     PanelState {},
+    PictureBoxState { image: None },
 );
 
 impl ComboBoxState {
@@ -793,6 +814,38 @@ pub fn panel(ui: &mut egui::Ui, id_salt: &str, state: &PanelState) -> egui::Resp
         egui::StrokeKind::Inside,
     );
     let r = ui.interact(rect, ui.scope_id().with(id_salt), egui::Sense::hover());
+    with_tooltip(r, &state.tooltip)
+}
+
+/// Dessine une image (proportions conservées). `response.clicked()` indique un clic.
+///
+/// Les chargeurs d'images d'`egui_extras` doivent être installés
+/// (`egui_extras::install_image_loaders`) : le code généré le fait au chargement.
+pub fn picture_box(ui: &mut egui::Ui, id_salt: &str, state: &PictureBoxState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let rect = anchored_rect(ui, state.bounds, state.anchor);
+    let r = place(
+        ui,
+        id_salt,
+        look!(state),
+        egui::Layout::centered_and_justified(egui::Direction::TopDown),
+        |ui| match &state.image {
+            Some(src) => ui.add(
+                egui::Image::new(src.clone())
+                    .max_size(rect.size())
+                    .maintain_aspect_ratio(true)
+                    .sense(egui::Sense::click()),
+            ),
+            None => {
+                let stroke = ui.visuals().widgets.noninteractive.bg_stroke;
+                ui.painter()
+                    .rect_stroke(rect, 2.0, stroke, egui::StrokeKind::Inside);
+                ui.allocate_rect(rect, egui::Sense::click())
+            }
+        },
+    );
     with_tooltip(r, &state.tooltip)
 }
 

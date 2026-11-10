@@ -7,6 +7,7 @@ use crate::tabs::Tab;
 pub fn properties_panel(app: &mut VrsApp, ui: &mut egui::Ui) {
     let i18n = &app.i18n;
     let mut open_handler = None;
+    let mut import_image = None;
     match app.tabs.get_mut(app.active) {
         Some(Tab::Designer(d)) => {
             egui::CollapsingHeader::new(i18n.tr("panel-toolbox"))
@@ -17,6 +18,7 @@ pub fn properties_panel(app: &mut VrsApp, ui: &mut egui::Ui) {
             ui.heading(i18n.tr("panel-properties"));
             let out = vrs_designer::properties_ui(ui, d, i18n);
             open_handler = out.open_handler;
+            import_image = out.import_image;
         }
         _ => {
             ui.heading(i18n.tr("panel-toolbox"));
@@ -24,6 +26,9 @@ pub fn properties_panel(app: &mut VrsApp, ui: &mut egui::Ui) {
             ui.separator();
             ui.heading(i18n.tr("panel-properties"));
         }
+    }
+    if let Some(name) = import_image {
+        app.cmd(Command::ImportImage(Some(name)));
     }
     if let Some(req) = open_handler {
         app.cmd(Command::OpenHandler(req));

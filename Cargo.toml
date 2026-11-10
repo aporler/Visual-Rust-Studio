@@ -27,7 +27,8 @@ vrs-debugger = { path = "crates/vrs-debugger" }
 eframe = "0.37"
 egui = { version = "0.37", features = ["default_fonts", "monochrome_emoji_fonts"] }
 egui_kittest = "0.37"
-egui_extras = { version = "0.37", features = ["syntect"] }
+egui_extras = { version = "0.37", features = ["syntect", "image", "file"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp"] }
 fluent-bundle = "0.16"
 fluent-syntax = "0.12"
 fluent-langneg = "0.13"

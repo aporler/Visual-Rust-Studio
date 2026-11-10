@@ -50,6 +50,15 @@ fn state_init(c: &Control) -> TokenStream {
         };
         extra.push(quote!(items: vec![#(#items),*], selected: #selected,));
     }
+    if c.kind.has(Feature::Image) {
+        if c.image.is_empty() {
+            extra.push(quote!(image: None,));
+        } else {
+            // Chemin relatif au fichier généré (src/forms/…) : l'image est intégrée.
+            let path = format!("../../{}", c.image.replace('\\', "/"));
+            extra.push(quote!(image: Some(egui::include_image!(#path)),));
+        }
+    }
     if c.kind.has(Feature::Value) {
         let (v, min, max) = (f32_lit(c.value), f32_lit(c.minimum), f32_lit(c.maximum));
         extra.push(quote!(value: #v, minimum: #min, maximum: #max,));
@@ -100,6 +109,13 @@ fn event_condition(event: EventKind) -> Option<TokenStream> {
         | EventKind::ValueChanged => Some(quote!(changed())),
         EventKind::Load | EventKind::Closing | EventKind::Closed => None,
     }
+}
+
+/// La fenêtre affiche-t-elle des images (PictureBox avec image) ?
+pub fn uses_images(form: &FormDocument) -> bool {
+    form.controls
+        .iter()
+        .any(|c| c.kind.has(Feature::Image) && !c.image.is_empty())
 }
 
 /// Génère le fichier du concepteur d'une fenêtre (déjà formaté, avec en-tête).
@@ -189,11 +205,18 @@ pub fn generate_designer(form: &FormDocument) -> String {
         ident("ui")
     };
 
-    let load_fn = form.events.get(&EventKind::Load).map(|h| {
+    // Chargeurs d'images (PictureBox) installés avant le premier affichage.
+    let images = uses_images(form);
+    let install = images.then(|| quote!(egui_extras::install_image_loaders(app.egui_ctx());));
+    let load_handler = form.events.get(&EventKind::Load).map(|h| {
         let h = ident(h);
+        quote!(self.#h(app);)
+    });
+    let load_fn = (images || load_handler.is_some()).then(|| {
         quote! {
             fn load(&mut self, app: &mut AppContext) {
-                self.#h(app);
+                #install
+                #load_handler
             }
         }
     });

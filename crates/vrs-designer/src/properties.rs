@@ -12,6 +12,25 @@ fn row(ui: &mut egui::Ui, label: String, add: impl FnOnce(&mut egui::Ui)) {
     ui.end_row();
 }
 
+/// Images du dossier `resources/` du projet (chemins relatifs au projet).
+fn resource_images(root: &std::path::Path) -> Vec<String> {
+    let mut v: Vec<String> = std::fs::read_dir(root.join("resources"))
+        .map(|d| {
+            d.filter_map(Result::ok)
+                .filter_map(|e| {
+                    let name = e.file_name().to_string_lossy().to_string();
+                    let ext = name.rsplit('.').next()?.to_lowercase();
+                    ["png", "jpg", "jpeg", "gif", "bmp"]
+                        .contains(&ext.as_str())
+                        .then(|| format!("resources/{name}"))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    v.sort();
+    v
+}
+
 /// Couleur facultative : case « personnalisée » + sélecteur.
 fn color_row(ui: &mut egui::Ui, value: &mut Option<[u8; 4]>, i18n: &I18n) {
     let mut custom = value.is_some();
@@ -233,6 +252,8 @@ fn control_properties(
         ui.colored_label(ui.visuals().error_fg_color, i18n.tr(msg));
     }
 
+    let root = state.project_root.clone();
+    let mut import = None;
     let Some(c) = state.doc.control_mut(name) else {
         return;
     };
@@ -332,6 +353,32 @@ fn control_properties(
                         });
                 });
             }
+            if c.kind.has(Feature::Image) {
+                row(ui, i18n.tr("prop-image"), |ui| {
+                    let none = i18n.tr("events-none");
+                    let files = resource_images(&root);
+                    let shown = if c.image.is_empty() {
+                        none.clone()
+                    } else {
+                        c.image.clone()
+                    };
+                    egui::ComboBox::from_id_salt("vrs-prop-image")
+                        .selected_text(shown)
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut c.image, String::new(), none);
+                            for f in files {
+                                ui.selectable_value(&mut c.image, f.clone(), f);
+                            }
+                        });
+                    if ui
+                        .small_button("…")
+                        .on_hover_text(i18n.tr("prop-image-import"))
+                        .clicked()
+                    {
+                        import = Some(c.name.clone());
+                    }
+                });
+            }
             if c.kind.has(Feature::Value) {
                 ui.label(RichText::new(i18n.tr("prop-group-data")).strong());
                 ui.end_row();
@@ -347,6 +394,9 @@ fn control_properties(
                 });
             }
         });
+    if import.is_some() {
+        out.import_image = import;
+    }
     ui.add_space(6.0);
     ui.strong(i18n.tr("prop-group-events"));
     let events = c.events.clone();

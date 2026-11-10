@@ -54,7 +54,7 @@ actions, bracket matching, minimap.
 ### Phase 7 — Advanced IDE (started)
 Done: CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,
 GroupBox, Panel; message box; debugging through DAP (`vrs-debugger`);
-BackColor, ForeColor, font size; Anchor.
+BackColor, ForeColor, font size; Anchor; PictureBox and image resources.
 - Debugging via DAP (CodeLLDB / lldb-dap, GDB): breakpoints, stepping,
   variables, call stack, threads, panics. `vrs-debugger` crate.
 - Components: CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,
@@ -122,7 +122,8 @@ parenthèses, minimap.
 ### Phase 7 — IDE avancé (commencée)
 Fait : CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,
 GroupBox, Panel ; boîte de message ; débogage via DAP (`vrs-debugger`) ;
-BackColor, ForeColor, taille de police ; Anchor.
+BackColor, ForeColor, taille de police ; Anchor ; PictureBox et ressources
+d'images.
 - Débogage via DAP (CodeLLDB / lldb-dap, GDB) : points d'arrêt, pas à pas,
   variables, pile, threads, paniques. Crate `vrs-debugger`.
 - Composants : CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,

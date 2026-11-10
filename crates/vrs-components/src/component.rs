@@ -16,6 +16,7 @@ pub enum ComponentKind {
     Slider,
     GroupBox,
     Panel,
+    PictureBox,
 }
 
 /// Propriétés propres à certains composants (en plus de Name, Text, position…).
@@ -31,11 +32,13 @@ pub enum Feature {
     Items,
     /// Valeur numérique (`value`, `minimum`, `maximum`).
     Value,
+    /// Image du projet (`image`).
+    Image,
 }
 
 impl ComponentKind {
     /// Tous les composants, dans l'ordre de la boîte à outils.
-    pub const ALL: [ComponentKind; 11] = [
+    pub const ALL: [ComponentKind; 12] = [
         Self::Button,
         Self::Label,
         Self::TextBox,
@@ -47,6 +50,7 @@ impl ComponentKind {
         Self::Slider,
         Self::GroupBox,
         Self::Panel,
+        Self::PictureBox,
     ];
 
     /// Nom du type (identique au nom anglais de Windows Forms).
@@ -63,6 +67,7 @@ impl ComponentKind {
             Self::Slider => "Slider",
             Self::GroupBox => "GroupBox",
             Self::Panel => "Panel",
+            Self::PictureBox => "PictureBox",
         }
     }
 
@@ -80,6 +85,7 @@ impl ComponentKind {
             Self::Slider => "slider",
             Self::GroupBox => "group_box",
             Self::Panel => "panel",
+            Self::PictureBox => "picture_box",
         }
     }
 
@@ -97,6 +103,7 @@ impl ComponentKind {
             Self::Slider => "SliderState",
             Self::GroupBox => "GroupBoxState",
             Self::Panel => "PanelState",
+            Self::PictureBox => "PictureBoxState",
         }
     }
 
@@ -141,6 +148,7 @@ impl ComponentKind {
             Self::Slider => (160.0, 22.0),
             Self::GroupBox => (200.0, 120.0),
             Self::Panel => (200.0, 120.0),
+            Self::PictureBox => (120.0, 90.0),
         }
     }
 
@@ -166,6 +174,7 @@ impl ComponentKind {
             Self::ComboBox | Self::ListBox => &[Feature::Items],
             Self::ProgressBar | Self::Slider => &[Feature::Value],
             Self::Panel => &[],
+            Self::PictureBox => &[Feature::Image],
         }
     }
 
@@ -176,7 +185,7 @@ impl ComponentKind {
     /// Événements pris en charge.
     pub fn events(self) -> &'static [EventKind] {
         match self {
-            Self::Button | Self::Label => &[EventKind::Click],
+            Self::Button | Self::Label | Self::PictureBox => &[EventKind::Click],
             Self::TextBox => &[EventKind::TextChanged],
             Self::CheckBox | Self::RadioButton => &[EventKind::CheckedChanged],
             Self::ComboBox | Self::ListBox => &[EventKind::SelectionChanged],

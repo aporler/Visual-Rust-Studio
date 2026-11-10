@@ -62,7 +62,7 @@ fn handle_cursor((dx, dy): (i8, i8)) -> CursorIcon {
 }
 
 /// Dessine un contrôle avec les fonctions du runtime (rendu identique à l'application).
-fn render_control(ui: &mut egui::Ui, c: &mut Control) -> egui::Response {
+fn render_control(ui: &mut egui::Ui, c: &mut Control, root: &std::path::Path) -> egui::Response {
     use vrs_runtime as rt;
     let b = bounds(c);
     let name = c.name.clone();
@@ -133,6 +133,16 @@ fn render_control(ui: &mut egui::Ui, c: &mut Control) -> egui::Response {
         }
         ComponentKind::GroupBox => rt::group_box(ui, &name, &state!(GroupBoxState)),
         ComponentKind::Panel => rt::panel(ui, &name, &state!(PanelState)),
+        ComponentKind::PictureBox => {
+            let mut s = state!(PictureBoxState);
+            if !c.image.is_empty() {
+                let path = root.join(&c.image);
+                s.image = Some(egui::ImageSource::Uri(
+                    format!("file://{}", path.display()).into(),
+                ));
+            }
+            rt::picture_box(ui, &name, &s)
+        }
     }
 }
 
@@ -234,6 +244,7 @@ pub fn canvas_ui(
             }
 
             // Contrôles : rendu réel, dans une zone limitée à la zone cliente.
+            let root = state.project_root.clone();
             let mut previews = std::mem::take(&mut state.preview_states);
             let preview = state.preview;
             // Cadres d'abord (derrière), comme dans l'application générée.
@@ -245,9 +256,9 @@ pub fn canvas_ui(
                     if preview {
                         // Aperçu : l'état interactif est conservé entre les images.
                         let p = previews.entry(c.name.clone()).or_insert_with(|| c.clone());
-                        render_control(ui, p);
+                        render_control(ui, p, &root);
                     } else {
-                        render_control(ui, &mut c.clone());
+                        render_control(ui, &mut c.clone(), &root);
                     }
                     if !c.visible {
                         // Contrôle masqué à l'exécution : affiché en transparence.

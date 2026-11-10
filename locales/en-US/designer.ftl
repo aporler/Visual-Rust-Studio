@@ -97,3 +97,7 @@ anchor-left = Left
 anchor-top = Top
 anchor-right = Right
 anchor-bottom = Bottom
+component-picturebox = PictureBox
+component-picturebox-desc = Displays an image from the project resources.
+prop-image = Image
+prop-image-import = Import an image into the project resources…

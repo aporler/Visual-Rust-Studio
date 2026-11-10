@@ -65,4 +65,6 @@ pub enum Command {
     Debug(crate::debug::DebugAction),
     ToggleBreakpoint,
     ClearBreakpoints,
+    /// Importe une image dans `resources/` (et l'affecte au contrôle donné).
+    ImportImage(Option<String>),
 }

@@ -295,3 +295,4 @@ debug-no-adapter = No se encontró ningún depurador. Instale GDB 14 o posterior
 debug-no-binary = No se encuentra el programa a depurar.
 settings-debugger-path = Ruta del depurador
 settings-debugger-detected = Depurador: { $adapter }
+cmd-add-resource = Agregar una imagen a los recursos…

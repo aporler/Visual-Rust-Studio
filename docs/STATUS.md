@@ -57,7 +57,8 @@
   replaced by spaces, find/replace, go to line, rustfmt (command and on save),
   warning on generated files.
 - **Components**: Button, Label, TextBox, CheckBox, RadioButton (exclusive
-  groups), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel, with their
+  groups), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
+  PictureBox (images copied to `resources/` and embedded in the program), with their
   own properties (Checked, Items, Selected, Value, Minimum, Maximum, Group) and
   events (Click, TextChanged, CheckedChanged, SelectionChanged, ValueChanged).
   `app.message_box("…")` shows a modal message (MsgBox). Every control has
@@ -158,7 +159,8 @@
   rustfmt (commande et à l'enregistrement), avertissement sur les fichiers
   générés.
 - **Composants** : Button, Label, TextBox, CheckBox, RadioButton (groupes
-  exclusifs), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel, avec
+  exclusifs), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
+  PictureBox (images copiées dans `resources/` et intégrées au programme), avec
   leurs propriétés (Checked, Items, Selected, Value, Minimum, Maximum, Group)
   et événements (Click, TextChanged, CheckedChanged, SelectionChanged,
   ValueChanged). `app.message_box("…")` affiche un message modal (MsgBox).

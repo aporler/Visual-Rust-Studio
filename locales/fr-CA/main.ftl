@@ -293,3 +293,4 @@ debug-no-adapter = Aucun débogueur trouvé. Installez GDB 14 ou plus récent, l
 debug-no-binary = Le programme à déboguer est introuvable.
 settings-debugger-path = Chemin du débogueur
 settings-debugger-detected = Débogueur : { $adapter }
+cmd-add-resource = Ajouter une image aux ressources…

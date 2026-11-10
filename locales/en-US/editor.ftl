@@ -80,3 +80,4 @@ api-back-color = Background color (`Option<vrs::Color>`), `None` for the theme c
 api-fore-color = Text color (`Option<vrs::Color>`), `None` for the theme color.
 api-font-size = Font size in points (`Option<f32>`).
 api-anchor = Sides the control stays attached to: `vrs::Anchor::new(left, top, right, bottom)`.
+api-image = Image displayed (`Option<egui::ImageSource>`), embedded in the program with `egui::include_image!`.

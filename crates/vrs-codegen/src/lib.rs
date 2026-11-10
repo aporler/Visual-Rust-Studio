@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 
 use vrs_components::FormDocument;
 
-pub use designer::{generate_designer, generate_forms_mod};
+pub use designer::{generate_designer, generate_forms_mod, uses_images};
 pub use user_code::{ensure_handler, ensure_handler_returning, find_fn_line, user_file_skeleton};
 
 /// Source du runtime copié dans `src/vrs/mod.rs`.
@@ -152,6 +152,10 @@ pub fn sync_project(
         }
     }
 
+    if forms.iter().any(uses_images) {
+        ensure_image_dependencies(root, &mut report)?;
+    }
+
     let runtime_path = root.join("src").join("vrs").join("mod.rs");
     let runtime = format!(
         "{}{RUNTIME_SOURCE}",
@@ -171,6 +175,47 @@ pub fn sync_project(
         sync_form_into(root, form, comments, &mut report)?;
     }
     Ok(report)
+}
+
+/// Dépendances nécessaires pour afficher des images (PictureBox).
+pub const IMAGE_DEPENDENCIES: &str = "egui_extras = { version = \"0.37\", features = [\"image\"] }\nimage = { version = \"0.25\", default-features = false, features = [\"png\", \"jpeg\", \"gif\", \"bmp\"] }\n";
+
+/// Ajoute `egui_extras` et `image` au `Cargo.toml` s'ils sont absents
+/// (copie `.bak` avant modification ; le reste du fichier n'est pas touché).
+fn ensure_image_dependencies(root: &Path, report: &mut SyncReport) -> Result<(), CodegenError> {
+    let manifest = root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest)?;
+    let has = |name: &str| {
+        text.lines()
+            .any(|l| l.trim_start().starts_with(name) && l.contains('='))
+    };
+    let mut missing = String::new();
+    for line in IMAGE_DEPENDENCIES.lines() {
+        let name = line.split_whitespace().next().unwrap_or_default();
+        if !has(name) {
+            missing.push_str(line);
+            missing.push('\n');
+        }
+    }
+    if missing.is_empty() {
+        return Ok(());
+    }
+    let new_text = match text.find("[dependencies]") {
+        Some(i) => {
+            let after = i + "[dependencies]".len();
+            let line_end = text[after..]
+                .find('\n')
+                .map_or(text.len(), |j| after + j + 1);
+            format!("{}{missing}{}", &text[..line_end], &text[line_end..])
+        }
+        None => format!("{}\n[dependencies]\n{missing}", text.trim_end()),
+    };
+    if let Some(bak) = vrs_core::fs::backup_file(&manifest)? {
+        report.backups.push(bak);
+    }
+    vrs_core::fs::atomic_write(&manifest, new_text)?;
+    report.written.push(manifest);
+    Ok(())
 }
 
 /// Régénère le code d'une seule fenêtre.

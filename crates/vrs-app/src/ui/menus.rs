@@ -138,6 +138,13 @@ pub fn menu_bar(app: &mut VrsApp, ui: &mut egui::Ui) {
         });
         ui.menu_button(i18n_menu(app, "menu-project"), |ui| {
             item(app, ui, "cmd-add-form", Command::AddForm, is_gui);
+            item(
+                app,
+                ui,
+                "cmd-add-resource",
+                Command::ImportImage(None),
+                is_gui,
+            );
             item(app, ui, "cmd-generate-code", Command::GenerateCode, is_gui);
             ui.separator();
             let last = app.project.as_ref().is_some_and(|p| {

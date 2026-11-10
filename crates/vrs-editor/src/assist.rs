@@ -383,6 +383,12 @@ fn members(path: &str, ctx: &CompletionContext) -> Vec<CompletionItem> {
                         "api-selected-text",
                     ),
                 ],
+                "PictureBox" => &[(
+                    "image",
+                    "image = Some(egui::include_image!(\"../../resources/$0\"));",
+                    ItemKind::Field,
+                    "api-image",
+                )],
                 "ProgressBar" | "Slider" => &[
                     ("value", "value", ItemKind::Field, "api-value"),
                     ("minimum", "minimum", ItemKind::Field, "api-minimum"),

@@ -166,6 +166,7 @@ impl VrsApp {
                 }
             }
             Command::DebugStart => self.start_debugging(),
+            Command::ImportImage(control) => self.import_image(control),
             Command::Debug(a) => self.debug_action(a),
             Command::ToggleBreakpoint => {
                 if let Some(Tab::Code(e)) = self.tabs.get_mut(self.active) {
@@ -382,6 +383,67 @@ impl VrsApp {
             return;
         }
         self.sync_code();
+    }
+
+    /// Copie une image dans `resources/` et l'affecte éventuellement à un contrôle.
+    fn import_image(&mut self, control: Option<String>) {
+        let Some(root) = self.project.as_ref().map(|p| p.root.clone()) else {
+            return;
+        };
+        let Some(src) = rfd::FileDialog::new()
+            .set_title(self.i18n.tr("cmd-add-resource"))
+            .add_filter("Images", &["png", "jpg", "jpeg", "gif", "bmp"])
+            .pick_file()
+        else {
+            return;
+        };
+        let dir = root.join("resources");
+        let name = src
+            .file_name()
+            .map(|n| n.to_string_lossy().replace(' ', "_"))
+            .unwrap_or_else(|| "image.png".into());
+        let mut dest = dir.join(&name);
+        let mut i = 2;
+        while dest.exists() && !same_path(&dest, &src) {
+            let stem = Path::new(&name)
+                .file_stem()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let ext = Path::new(&name)
+                .extension()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_default();
+            dest = dir.join(format!("{stem}{i}.{ext}"));
+            i += 1;
+        }
+        let copied = std::fs::create_dir_all(&dir).and_then(|_| {
+            if same_path(&dest, &src) {
+                Ok(0)
+            } else {
+                std::fs::copy(&src, &dest)
+            }
+        });
+        if let Err(e) = copied {
+            let msg = self
+                .i18n
+                .trf("error-save", &[("error", e.to_string().into())]);
+            self.error(msg);
+            return;
+        }
+        let rel = format!(
+            "resources/{}",
+            dest.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default()
+        );
+        if let (Some(control), Some(d)) = (control, self.active_designer()) {
+            d.edit(|doc| {
+                if let Some(c) = doc.control_mut(&control) {
+                    c.image = rel.clone();
+                }
+            });
+        }
+        self.refresh_tree();
     }
 
     pub fn refresh_tree(&mut self) {

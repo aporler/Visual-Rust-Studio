@@ -214,6 +214,8 @@ impl VrsApp {
             prop.push(mono);
         }
         ctx.set_fonts(fonts);
+        // Images (PictureBox) : chargeurs de fichiers et de formats d'image.
+        egui_extras::install_image_loaders(ctx);
     }
 
     /// Enregistre les paramètres.

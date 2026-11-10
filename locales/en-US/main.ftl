@@ -292,3 +292,4 @@ debug-no-adapter = No debugger found. Install GDB 14 or newer, lldb-dap or CodeL
 debug-no-binary = The program to debug cannot be found.
 settings-debugger-path = Path to the debugger
 settings-debugger-detected = Debugger: { $adapter }
+cmd-add-resource = Add an Image Resource…

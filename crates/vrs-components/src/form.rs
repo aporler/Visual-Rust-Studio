@@ -65,6 +65,9 @@ pub struct Control {
     /// Ancrage aux bords de la fenêtre.
     #[serde(default, skip_serializing_if = "Anchor::is_default")]
     pub anchor: Anchor,
+    /// PictureBox : image, chemin relatif au projet (`resources/logo.png`).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub image: String,
 }
 
 /// Côtés de la fenêtre auxquels un contrôle reste attaché (Anchor).
@@ -140,6 +143,7 @@ impl Control {
             fore_color: None,
             font_size: None,
             anchor: Anchor::default(),
+            image: String::new(),
         }
     }
 
