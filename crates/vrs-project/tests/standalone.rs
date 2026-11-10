@@ -71,6 +71,17 @@ fn gui_project_compiles_without_vrs() {
         }
     }
     form.add_control(ComponentKind::RadioButton, 200.0, 460.0);
+    // Contrôle placé sur la 2e page d'un TabControl.
+    let tabs = form
+        .controls
+        .iter()
+        .find(|c| c.kind == ComponentKind::TabControl)
+        .unwrap()
+        .clone();
+    let on_page = form.add_control(ComponentKind::Label, tabs.x + 8.0, tabs.y + 40.0);
+    let c = form.control_mut(&on_page).unwrap();
+    assert_eq!(c.parent.as_deref(), Some(tabs.name.as_str()));
+    c.page = 1;
     // Image intégrée (PNG 1×1) : les dépendances d'image sont ajoutées au Cargo.toml.
     const PNG: &[u8] = &[
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,

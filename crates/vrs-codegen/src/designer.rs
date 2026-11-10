@@ -42,7 +42,11 @@ fn state_init(c: &Control) -> TokenStream {
         let group = string_expr(&c.group);
         extra.push(quote!(group: #group,));
     }
-    if c.kind.has(Feature::Items) {
+    if c.kind == ComponentKind::TabControl {
+        let pages = c.items.iter().map(|i| quote!(String::from(#i)));
+        let selected = c.selected.unwrap_or(0).min(c.items.len().saturating_sub(1));
+        extra.push(quote!(pages: vec![#(#pages),*], selected: #selected,));
+    } else if c.kind.has(Feature::Items) {
         let items = c.items.iter().map(|i| quote!(String::from(#i)));
         let selected = match c.selected.filter(|i| *i < c.items.len()) {
             Some(i) => quote!(Some(#i)),
@@ -270,11 +274,29 @@ pub fn generate_designer(form: &FormDocument) -> String {
                 });
             }
         }
+        // Contrôle d'une page d'onglet : affiché seulement si la page est active.
+        let draw = match c.parent.as_ref().filter(|p| {
+            form.control(p)
+                .is_some_and(|t| t.kind == ComponentKind::TabControl)
+        }) {
+            Some(p) => {
+                let p = ident(p);
+                let page = c.page;
+                quote! {
+                    if self.#p.selected == #page {
+                        vrs::#render(ui, #name_str, #arg)
+                    } else {
+                        vrs::hidden_response(ui, #name_str)
+                    }
+                }
+            }
+            None => quote!(vrs::#render(ui, #name_str, #arg)),
+        };
         if handlers.is_empty() && others.is_empty() && c.context_menu.is_empty() {
-            draws.push(quote!(let _ = vrs::#render(ui, #name_str, #arg);));
+            draws.push(quote!(let _ = #draw;));
         } else {
             uses_app |= !handlers.is_empty();
-            draws.push(quote!(let #name = vrs::#render(ui, #name_str, #arg);));
+            draws.push(quote!(let #name = #draw;));
             for (cond, handler) in handlers {
                 dispatch.push(quote! {
                     if #name.#cond {
@@ -529,6 +551,22 @@ mod tests {
         assert!(src.contains("let button1 = vrs::button("));
         assert!(src.contains("vrs::context_menu(&button1, &self.button1_menu)"));
         assert!(src.contains("Some(\"menu_copier\") => self.menu_copier_click(app),"));
+    }
+
+    #[test]
+    fn tab_control_pages() {
+        let mut f = FormDocument::new("Form1");
+        let t = f.add_control(ComponentKind::TabControl, 0.0, 0.0);
+        let b = f.add_control(ComponentKind::Button, 10.0, 40.0);
+        assert_eq!(f.control(&b).unwrap().parent.as_deref(), Some(t.as_str()));
+        let src = generate_designer(&f);
+        syn::parse_file(&src).unwrap();
+        assert!(src.contains("pages: vec![String::from(\"Page 1\"), String::from(\"Page 2\")]"));
+        assert!(
+            src.contains("if self.tab_control1.selected == 0usize")
+                || src.contains("if self.tab_control1.selected == 0 ")
+        );
+        assert!(src.contains("vrs::hidden_response(ui, \"button1\")"));
     }
 
     #[test]

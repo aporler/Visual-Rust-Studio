@@ -60,7 +60,8 @@
   groups), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
   PictureBox (images copied to `resources/` and embedded in the program),
   menu bar (MenuStrip, edited as an outline, Click event per item),
-  context menu (right click) on every control, with their
+  context menu (right click) on every control, TabControl (controls dropped
+  on a page belong to it and move with it), with their
   own properties (Checked, Items, Selected, Value, Minimum, Maximum, Group) and
   events (Click, TextChanged, CheckedChanged, SelectionChanged, ValueChanged).
   `app.message_box("…")` shows a modal message (MsgBox). Every control has
@@ -164,7 +165,9 @@
   exclusifs), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
   PictureBox (images copiées dans `resources/` et intégrées au programme),
   barre de menus (MenuStrip, éditée sous forme de plan, événement Click par
-  élément), menu contextuel (clic droit) sur chaque contrôle, avec
+  élément), menu contextuel (clic droit) sur chaque contrôle, TabControl (les
+  contrôles déposés sur une page lui appartiennent et suivent ses
+  déplacements), avec
   leurs propriétés (Checked, Items, Selected, Value, Minimum, Maximum, Group)
   et événements (Click, TextChanged, CheckedChanged, SelectionChanged,
   ValueChanged). `app.message_box("…")` affiche un message modal (MsgBox).

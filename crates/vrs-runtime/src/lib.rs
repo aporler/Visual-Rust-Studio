@@ -456,6 +456,29 @@ pub struct PictureBoxState {
     pub image: Option<egui::ImageSource<'static>>,
 }
 
+/// État d'un contrôle à onglets (`TabControl`). Les contrôles d'une page ne
+/// sont affichés que lorsque `selected` désigne cette page.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TabControlState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
+    /// Titres des pages.
+    pub pages: Vec<String>,
+    /// Page affichée (index).
+    pub selected: usize,
+}
+
 macro_rules! impl_state_new {
     ($($t:ident { $($f:ident : $v:expr),* }),* $(,)?) => {$(
         impl $t {
@@ -507,6 +530,10 @@ impl_state_new!(
     GroupBoxState {},
     PanelState {},
     PictureBoxState { image: None },
+    TabControlState {
+        pages: Vec::new(),
+        selected: 0
+    },
 );
 
 impl ComboBoxState {
@@ -581,6 +608,11 @@ macro_rules! look {
             back: None,
         }
     };
+}
+
+/// Réponse vide pour un contrôle qui n'est pas affiché (page d'onglet masquée).
+pub fn hidden_response(ui: &mut egui::Ui, id_salt: &str) -> egui::Response {
+    hidden(ui, id_salt)
 }
 
 /// Réponse vide pour un contrôle masqué (jamais cliqué, jamais modifié).
@@ -939,6 +971,58 @@ pub fn picture_box(ui: &mut egui::Ui, id_salt: &str, state: &PictureBoxState) ->
             }
         },
     );
+    with_tooltip(r, &state.tooltip)
+}
+
+/// Dessine un contrôle à onglets. `response.changed()` indique un changement de page.
+pub fn tab_control(
+    ui: &mut egui::Ui,
+    id_salt: &str,
+    state: &mut TabControlState,
+) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let rect = anchored_rect(ui, state.bounds, state.anchor);
+    let visuals = ui.visuals().clone();
+    let header = 26.0_f32.min(rect.height());
+    let body = egui::Rect::from_min_max(rect.min + egui::vec2(0.0, header), rect.max);
+    ui.painter().rect(
+        body,
+        2.0,
+        state.back_color.unwrap_or(visuals.panel_fill),
+        visuals.widgets.noninteractive.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
+    let before = state.selected;
+    let (fore, size) = (state.fore_color, state.font_size);
+    let header_rect = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), header));
+    let pages = &state.pages;
+    let selected = &mut state.selected;
+    let mut r = ui
+        .scope_builder(
+            egui::UiBuilder::new()
+                .id_salt(id_salt)
+                .max_rect(header_rect)
+                .layout(egui::Layout::left_to_right(egui::Align::Center)),
+            |ui| {
+                if !state.enabled {
+                    ui.disable();
+                }
+                for (i, p) in pages.iter().enumerate() {
+                    if ui
+                        .selectable_label(*selected == i, rich(p, fore, size))
+                        .clicked()
+                    {
+                        *selected = i;
+                    }
+                }
+            },
+        )
+        .response;
+    if state.selected != before {
+        r.mark_changed();
+    }
     with_tooltip(r, &state.tooltip)
 }
 

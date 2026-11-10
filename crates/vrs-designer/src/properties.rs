@@ -440,34 +440,47 @@ fn control_properties(
             if c.kind.has(Feature::Items) {
                 ui.label(RichText::new(i18n.tr("prop-group-data")).strong());
                 ui.end_row();
-                row(ui, i18n.tr("prop-items"), |ui| {
-                    let mut text = c.items.join("\n");
-                    let r = ui
-                        .add(egui::TextEdit::multiline(&mut text).desired_rows(4))
-                        .on_hover_text(i18n.tr("prop-items-hint"));
-                    if r.changed() {
-                        c.items = text.lines().map(str::to_owned).collect();
-                        if text.ends_with('\n') {
-                            c.items.push(String::new());
-                        }
-                    }
-                });
-                row(ui, i18n.tr("prop-selected"), |ui| {
-                    let none = i18n.tr("events-none");
-                    let shown = c
-                        .selected
-                        .and_then(|i| c.items.get(i))
-                        .cloned()
-                        .unwrap_or_else(|| none.clone());
-                    egui::ComboBox::from_id_salt("vrs-prop-selected")
-                        .selected_text(shown)
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut c.selected, None, none);
-                            for (i, item) in c.items.iter().enumerate() {
-                                ui.selectable_value(&mut c.selected, Some(i), item.as_str());
+                let tabs = c.kind == vrs_components::ComponentKind::TabControl;
+                row(
+                    ui,
+                    i18n.tr(if tabs { "prop-pages" } else { "prop-items" }),
+                    |ui| {
+                        let mut text = c.items.join("\n");
+                        let r = ui
+                            .add(egui::TextEdit::multiline(&mut text).desired_rows(4))
+                            .on_hover_text(i18n.tr("prop-items-hint"));
+                        if r.changed() {
+                            c.items = text.lines().map(str::to_owned).collect();
+                            if text.ends_with('\n') {
+                                c.items.push(String::new());
                             }
-                        });
-                });
+                        }
+                    },
+                );
+                row(
+                    ui,
+                    i18n.tr(if tabs {
+                        "prop-selected-page"
+                    } else {
+                        "prop-selected"
+                    }),
+                    |ui| {
+                        let none = i18n.tr("events-none");
+                        let shown = c
+                            .selected
+                            .and_then(|i| c.items.get(i))
+                            .cloned()
+                            .unwrap_or_else(|| none.clone());
+                        egui::ComboBox::from_id_salt("vrs-prop-selected")
+                            .selected_text(shown)
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut c.selected, None, none);
+                                for (i, item) in c.items.iter().enumerate() {
+                                    ui.selectable_value(&mut c.selected, Some(i), item.as_str());
+                                }
+                            });
+                    },
+                );
             }
             if c.kind.has(Feature::Image) {
                 row(ui, i18n.tr("prop-image"), |ui| {

@@ -107,3 +107,7 @@ prop-menu-placeholder = File
     Quit
 prop-menu-hint = One item per line; indent with two spaces for a submenu. Items without submenu have a Click event.
 prop-context-menu = Context menu (right click)
+component-tabcontrol = TabControl
+component-tabcontrol-desc = Tabs: each page shows its own controls. Drop controls on the page displayed.
+prop-pages = Pages (one per line)
+prop-selected-page = Page displayed

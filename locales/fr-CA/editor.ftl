@@ -81,3 +81,5 @@ api-fore-color = Couleur du texte (`Option<vrs::Color>`), `None` pour la couleur
 api-font-size = Taille de la police en points (`Option<f32>`).
 api-anchor = Côtés auxquels le contrôle reste attaché : `vrs::Anchor::new(gauche, haut, droite, bas)`.
 api-image = Image affichée (`Option<egui::ImageSource>`), intégrée au programme avec `egui::include_image!`.
+api-pages = Titres des pages (Vec<String>).
+api-selected-page = Index de la page affichée (usize).

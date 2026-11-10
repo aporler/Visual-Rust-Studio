@@ -71,6 +71,15 @@ pub struct Control {
     /// Menu contextuel (clic droit).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub context_menu: Vec<MenuItem>,
+    /// TabControl qui contient ce contrôle, et numéro de la page.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent: Option<String>,
+    #[serde(default, skip_serializing_if = "is_zero_usize")]
+    pub page: usize,
+}
+
+fn is_zero_usize(v: &usize) -> bool {
+    *v == 0
 }
 
 /// Côtés de la fenêtre auxquels un contrôle reste attaché (Anchor).
@@ -148,6 +157,8 @@ impl Control {
             anchor: Anchor::default(),
             image: String::new(),
             context_menu: Vec::new(),
+            parent: None,
+            page: 0,
         }
     }
 
@@ -436,9 +447,53 @@ impl FormDocument {
     /// Ajoute un contrôle et retourne son nom.
     pub fn add_control(&mut self, kind: ComponentKind, x: f32, y: f32) -> String {
         let (name, index) = self.next_name(kind);
-        self.controls
-            .push(Control::new(kind, name.clone(), index, x, y));
+        let mut c = Control::new(kind, name.clone(), index, x, y);
+        if kind == ComponentKind::TabControl {
+            c.items = vec!["Page 1".into(), "Page 2".into()];
+            c.selected = Some(0);
+        } else {
+            self.assign_parent(&mut c);
+        }
+        self.controls.push(c);
         name
+    }
+
+    /// TabControl dont la zone des pages contient le point (x, y).
+    pub fn tab_control_at(&self, x: f32, y: f32) -> Option<&Control> {
+        self.controls.iter().rev().find(|t| {
+            t.kind == ComponentKind::TabControl
+                && x >= t.x
+                && x < t.x + t.width
+                && y >= t.y + ComponentKind::TAB_HEADER
+                && y < t.y + t.height
+        })
+    }
+
+    /// Rattache un contrôle au TabControl sous son coin supérieur gauche.
+    pub fn assign_parent(&self, c: &mut Control) {
+        if c.kind == ComponentKind::TabControl {
+            return;
+        }
+        match self.tab_control_at(c.x, c.y) {
+            Some(t) => {
+                c.parent = Some(t.name.clone());
+                c.page = t.selected.unwrap_or(0);
+            }
+            None => {
+                c.parent = None;
+                c.page = 0;
+            }
+        }
+    }
+
+    /// Le contrôle est-il sur la page affichée de son TabControl ?
+    pub fn on_visible_page(&self, c: &Control) -> bool {
+        match &c.parent {
+            Some(p) => self
+                .control(p)
+                .is_none_or(|t| t.selected.unwrap_or(0) == c.page),
+            None => true,
+        }
     }
 
     /// Renomme un contrôle (et ses gestionnaires dont le nom suivait la convention).

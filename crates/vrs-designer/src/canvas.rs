@@ -133,6 +133,14 @@ fn render_control(ui: &mut egui::Ui, c: &mut Control, root: &std::path::Path) ->
         }
         ComponentKind::GroupBox => rt::group_box(ui, &name, &state!(GroupBoxState)),
         ComponentKind::Panel => rt::panel(ui, &name, &state!(PanelState)),
+        ComponentKind::TabControl => {
+            let mut s = state!(TabControlState);
+            s.pages = c.items.clone();
+            s.selected = c.selected.unwrap_or(0);
+            let r = rt::tab_control(ui, &name, &mut s);
+            c.selected = Some(s.selected);
+            r
+        }
         ComponentKind::PictureBox => {
             let mut s = state!(PictureBoxState);
             if !c.image.is_empty() {
@@ -260,7 +268,14 @@ pub fn canvas_ui(
             let mut previews = std::mem::take(&mut state.preview_states);
             let preview = state.preview;
             // Cadres d'abord (derrière), comme dans l'application générée.
-            let mut controls = state.doc.controls.clone();
+            // Contrôles des pages d'onglets masquées : ni dessinés ni sélectionnables.
+            let mut controls: Vec<Control> = state
+                .doc
+                .controls
+                .iter()
+                .filter(|c| state.doc.on_visible_page(c))
+                .cloned()
+                .collect();
             controls.sort_by_key(|c| !c.kind.is_container());
             let menu_preview: Vec<vrs_runtime::MenuItemState> = to_menu_state(&state.doc.menu);
             ui.scope_builder(egui::UiBuilder::new().max_rect(client), |ui| {
@@ -330,8 +345,18 @@ pub fn canvas_ui(
                 }
                 if resp.drag_started() {
                     state.history.break_coalescing();
-                    let start = state
-                        .selection
+                    // Déplacer un TabControl déplace aussi ses contrôles.
+                    let mut names = state.selection.clone();
+                    for c in &state.doc.controls {
+                        if c.parent
+                            .as_ref()
+                            .is_some_and(|p| state.selection.contains(p))
+                            && !names.contains(&c.name)
+                        {
+                            names.push(c.name.clone());
+                        }
+                    }
+                    let start = names
                         .iter()
                         .filter_map(|n| state.doc.control(n).map(|c| (n.clone(), c.x, c.y)))
                         .collect();
@@ -426,7 +451,30 @@ pub fn canvas_ui(
 
             // Application du glisser en cours.
             apply_drag(state, grid);
-            if !ui.input(|i| i.pointer.any_down()) && state.drag.take().is_some() {
+            if !ui.input(|i| i.pointer.any_down())
+                && let Some(drag) = state.drag.take()
+            {
+                // Fin du déplacement : rattacher à la page d'onglet sous le contrôle.
+                if let DragOp::Move { start, .. } = drag {
+                    for (name, ..) in start {
+                        let Some(mut c) = state.doc.control(&name).cloned() else {
+                            continue;
+                        };
+                        if c.parent.as_ref().is_some_and(|p| {
+                            state
+                                .doc
+                                .control(p)
+                                .is_some_and(|t| state.selection.contains(&t.name))
+                        }) {
+                            continue;
+                        }
+                        state.doc.assign_parent(&mut c);
+                        if let Some(target) = state.doc.control_mut(&name) {
+                            target.parent = c.parent;
+                            target.page = c.page;
+                        }
+                    }
+                }
                 state.history.break_coalescing();
             }
 

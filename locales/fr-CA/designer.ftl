@@ -107,3 +107,7 @@ prop-menu-placeholder = Fichier
     Quitter
 prop-menu-hint = Un élément par ligne ; indentez de deux espaces pour un sous-menu. Les éléments sans sous-menu ont un événement Click.
 prop-context-menu = Menu contextuel (clic droit)
+component-tabcontrol = Onglets (TabControl)
+component-tabcontrol-desc = Des onglets : chaque page affiche ses propres contrôles. Déposez les contrôles sur la page affichée.
+prop-pages = Pages (une par ligne)
+prop-selected-page = Page affichée

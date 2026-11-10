@@ -383,6 +383,10 @@ fn members(path: &str, ctx: &CompletionContext) -> Vec<CompletionItem> {
                         "api-selected-text",
                     ),
                 ],
+                "TabControl" => &[
+                    ("pages", "pages", ItemKind::Field, "api-pages"),
+                    ("selected", "selected", ItemKind::Field, "api-selected-page"),
+                ],
                 "PictureBox" => &[(
                     "image",
                     "image = Some(egui::include_image!(\"../../resources/$0\"));",

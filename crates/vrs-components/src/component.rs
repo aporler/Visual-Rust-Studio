@@ -17,6 +17,7 @@ pub enum ComponentKind {
     GroupBox,
     Panel,
     PictureBox,
+    TabControl,
 }
 
 /// Propriétés propres à certains composants (en plus de Name, Text, position…).
@@ -38,7 +39,7 @@ pub enum Feature {
 
 impl ComponentKind {
     /// Tous les composants, dans l'ordre de la boîte à outils.
-    pub const ALL: [ComponentKind; 12] = [
+    pub const ALL: [ComponentKind; 13] = [
         Self::Button,
         Self::Label,
         Self::TextBox,
@@ -51,6 +52,7 @@ impl ComponentKind {
         Self::GroupBox,
         Self::Panel,
         Self::PictureBox,
+        Self::TabControl,
     ];
 
     /// Nom du type (identique au nom anglais de Windows Forms).
@@ -68,6 +70,7 @@ impl ComponentKind {
             Self::GroupBox => "GroupBox",
             Self::Panel => "Panel",
             Self::PictureBox => "PictureBox",
+            Self::TabControl => "TabControl",
         }
     }
 
@@ -86,6 +89,7 @@ impl ComponentKind {
             Self::GroupBox => "group_box",
             Self::Panel => "panel",
             Self::PictureBox => "picture_box",
+            Self::TabControl => "tab_control",
         }
     }
 
@@ -104,6 +108,7 @@ impl ComponentKind {
             Self::GroupBox => "GroupBoxState",
             Self::Panel => "PanelState",
             Self::PictureBox => "PictureBoxState",
+            Self::TabControl => "TabControlState",
         }
     }
 
@@ -122,6 +127,7 @@ impl ComponentKind {
                 | Self::ComboBox
                 | Self::ListBox
                 | Self::Slider
+                | Self::TabControl
         )
     }
 
@@ -149,6 +155,7 @@ impl ComponentKind {
             Self::GroupBox => (200.0, 120.0),
             Self::Panel => (200.0, 120.0),
             Self::PictureBox => (120.0, 90.0),
+            Self::TabControl => (280.0, 180.0),
         }
     }
 
@@ -175,6 +182,7 @@ impl ComponentKind {
             Self::ProgressBar | Self::Slider => &[Feature::Value],
             Self::Panel => &[],
             Self::PictureBox => &[Feature::Image],
+            Self::TabControl => &[Feature::Items],
         }
     }
 
@@ -190,6 +198,7 @@ impl ComponentKind {
             Self::CheckBox | Self::RadioButton => &[EventKind::CheckedChanged],
             Self::ComboBox | Self::ListBox => &[EventKind::SelectionChanged],
             Self::Slider => &[EventKind::ValueChanged],
+            Self::TabControl => &[EventKind::SelectionChanged],
             Self::ProgressBar | Self::GroupBox | Self::Panel => &[],
         }
     }
@@ -201,8 +210,11 @@ impl ComponentKind {
 
     /// Conteneur visuel (dessiné derrière les autres contrôles).
     pub fn is_container(self) -> bool {
-        matches!(self, Self::GroupBox | Self::Panel)
+        matches!(self, Self::GroupBox | Self::Panel | Self::TabControl)
     }
+
+    /// Hauteur de la rangée d'onglets d'un TabControl.
+    pub const TAB_HEADER: f32 = 26.0;
 }
 
 /// Événement auquel un gestionnaire Rust peut être associé.
