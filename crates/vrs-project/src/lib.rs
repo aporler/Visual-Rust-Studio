@@ -180,7 +180,11 @@ impl Project {
             .or_else(|| self.file.forms.first().cloned())
             .unwrap_or_default();
         Ok(vrs_codegen::sync_project(
-            &self.root, &forms, &startup, comments,
+            &self.root,
+            &forms,
+            &startup,
+            self.file.close_strategy == CloseStrategy::LastFormCloses,
+            comments,
         )?)
     }
 

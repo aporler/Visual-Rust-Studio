@@ -140,6 +140,25 @@ pub fn menu_bar(app: &mut VrsApp, ui: &mut egui::Ui) {
             item(app, ui, "cmd-add-form", Command::AddForm, is_gui);
             item(app, ui, "cmd-generate-code", Command::GenerateCode, is_gui);
             ui.separator();
+            let last = app.project.as_ref().is_some_and(|p| {
+                p.file.close_strategy == vrs_project::CloseStrategy::LastFormCloses
+            });
+            ui.add_enabled_ui(is_gui, |ui| {
+                ui.menu_button(app.i18n.tr("menu-close-strategy"), |ui| {
+                    if ui
+                        .radio(!last, app.i18n.tr("close-strategy-main"))
+                        .clicked()
+                    {
+                        app.cmd(Command::SetCloseStrategy(false));
+                        ui.close();
+                    }
+                    if ui.radio(last, app.i18n.tr("close-strategy-last")).clicked() {
+                        app.cmd(Command::SetCloseStrategy(true));
+                        ui.close();
+                    }
+                });
+            });
+            ui.separator();
             item(
                 app,
                 ui,

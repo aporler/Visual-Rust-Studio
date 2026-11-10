@@ -28,7 +28,7 @@ Window code generation, user code protection, Cargo build and execution
 independent of VRS. The Click handler is created by double-click (ahead of
 phase 5).
 
-### Phase 5 — Events and multiple windows (next)
+### Phase 5 — Events and multiple windows ✅
 - Multi-window runtime: `app.show_form(Form2::default())`,
   `app.show_dialog(…)` (simulated modal), `app.close()`, multiple instances,
   close strategy (`close_strategy` in `.vrsproj`). Planned implementation:
@@ -90,7 +90,7 @@ Génération du code des fenêtres, protection du code utilisateur, compilation
 Cargo et exécution indépendante de VRS. Le gestionnaire Click est créé par
 double-clic (une avance sur la phase 5).
 
-### Phase 5 — Événements et multifenêtrage (prochaine étape)
+### Phase 5 — Événements et multifenêtrage ✅
 - Runtime multifenêtre : `app.show_form(Form2::default())`,
   `app.show_dialog(…)` (modal simulé), `app.close()`, plusieurs instances,
   stratégie de fermeture (`close_strategy` du `.vrsproj`).

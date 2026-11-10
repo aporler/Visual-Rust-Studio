@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 use vrs_components::FormDocument;
 
 pub use designer::{generate_designer, generate_forms_mod};
-pub use user_code::{ensure_handler, find_fn_line, user_file_skeleton};
+pub use user_code::{ensure_handler, ensure_handler_returning, find_fn_line, user_file_skeleton};
 
 /// Source du runtime copié dans `src/vrs/mod.rs`.
 pub const RUNTIME_SOURCE: &str = include_str!("../../vrs-runtime/src/lib.rs");
@@ -141,6 +141,7 @@ pub fn sync_project(
     root: &Path,
     forms: &[FormDocument],
     startup: &str,
+    last_form_closes: bool,
     comments: &dyn Comments,
 ) -> Result<SyncReport, CodegenError> {
     let mut report = SyncReport::default();
@@ -161,7 +162,7 @@ pub fn sync_project(
     }
 
     let mod_path = root.join("src").join("forms").join("mod.rs");
-    let mod_src = generate_forms_mod(forms, startup);
+    let mod_src = generate_forms_mod(forms, startup, last_form_closes);
     if vrs_core::fs::write_if_changed(&mod_path, &mod_src)? {
         report.written.push(mod_path);
     }
@@ -211,7 +212,14 @@ fn sync_form_into(
     for (handler, owner, event) in form.handlers() {
         let owner = owner.unwrap_or_else(|| form.name.clone());
         let doc = comments.handler_doc(event.name(), &owner);
-        match ensure_handler(&src, &form.name, &handler, &doc, &comments.todo()) {
+        match ensure_handler_returning(
+            &src,
+            &form.name,
+            &handler,
+            &doc,
+            &comments.todo(),
+            event.handler_return(),
+        ) {
             Ok(Some(updated)) => {
                 src = updated;
                 added.push(handler);

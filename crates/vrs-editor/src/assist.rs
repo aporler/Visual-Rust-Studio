@@ -81,6 +81,8 @@ pub struct CompletionContext {
     pub controls: Vec<ControlInfo>,
     /// Le fichier est-il le code d'une fenêtre (accès à `self` et `app`) ?
     pub is_form: bool,
+    /// Fenêtres du projet (`Form1`, `Form2`…), pour `app.show_form(…)`.
+    pub forms: Vec<String>,
 }
 
 /// `text_box1` → `TextBox1` (nom tel qu'on l'écrirait en VB.NET).
@@ -124,6 +126,26 @@ fn vb_hints(ctx: &CompletionContext) -> Vec<(Vec<String>, CompletionItem)> {
                 "hint-title",
             ),
         ));
+        for f in &ctx.forms {
+            for (vb, insert, key) in [
+                (
+                    "Show",
+                    format!("app.show_form(super::{f}::default());"),
+                    "hint-show-form",
+                ),
+                (
+                    "ShowDialog",
+                    format!("app.show_dialog(super::{f}::default());"),
+                    "hint-show-dialog",
+                ),
+            ] {
+                let label = format!("{f}.{vb}() → {}", insert.trim_end_matches(';'));
+                v.push((
+                    vec![f.to_lowercase()],
+                    CompletionItem::new(&label, &insert, ItemKind::Hint, key).arg("form", f),
+                ));
+            }
+        }
         for (name, kind) in &ctx.controls {
             let vb = vb_style_name(name);
             v.push((
@@ -218,21 +240,64 @@ fn string_methods() -> Vec<CompletionItem> {
 fn members(path: &str, ctx: &CompletionContext) -> Vec<CompletionItem> {
     let parts: Vec<&str> = path.split('.').collect();
     match parts.as_slice() {
-        ["app"] if ctx.is_form => vec![
-            CompletionItem::new("exit()", "exit()", ItemKind::Method, "api-app-exit"),
-            CompletionItem::new(
-                "set_title(…)",
-                "set_title(\"$0\")",
+        ["app"] if ctx.is_form => {
+            let mut v = vec![
+                CompletionItem::new("exit()", "exit()", ItemKind::Method, "api-app-exit"),
+                CompletionItem::new("close()", "close()", ItemKind::Method, "api-app-close"),
+                CompletionItem::new("hide()", "hide()", ItemKind::Method, "api-app-hide"),
+                CompletionItem::new(
+                    "set_title(…)",
+                    "set_title(\"$0\")",
+                    ItemKind::Method,
+                    "api-app-set-title",
+                ),
+                CompletionItem::new(
+                    "set_size(…)",
+                    "set_size($0)",
+                    ItemKind::Method,
+                    "api-app-set-size",
+                ),
+            ];
+            for f in &ctx.forms {
+                v.push(
+                    CompletionItem::new(
+                        &format!("show_form({f})"),
+                        &format!("show_form(super::{f}::default())"),
+                        ItemKind::Method,
+                        "api-app-show-form",
+                    )
+                    .arg("form", f),
+                );
+                v.push(
+                    CompletionItem::new(
+                        &format!("show_dialog({f})"),
+                        &format!("show_dialog(super::{f}::default())"),
+                        ItemKind::Method,
+                        "api-app-show-dialog",
+                    )
+                    .arg("form", f),
+                );
+            }
+            v.push(CompletionItem::new(
+                "show_hidden(…)",
+                "show_hidden($0)",
                 ItemKind::Method,
-                "api-app-set-title",
-            ),
-            CompletionItem::new(
+                "api-app-show-hidden",
+            ));
+            v.push(CompletionItem::new(
+                "with_form(…)",
+                "with_form::<$0, _>(id, |f| {})",
+                ItemKind::Method,
+                "api-app-with-form",
+            ));
+            v.push(CompletionItem::new(
                 "egui_ctx()",
                 "egui_ctx()",
                 ItemKind::Method,
                 "api-app-egui-ctx",
-            ),
-        ],
+            ));
+            v
+        }
         ["self"] if ctx.is_form => ctx
             .controls
             .iter()
@@ -421,9 +486,10 @@ pub fn lint_vb_habits(text: &str, ctx: &CompletionContext) -> Vec<Lint> {
                     "Me" if ctx.is_form => {
                         // `Me.Close()` → `app.exit()` ; `Me` → `self`.
                         let tail: String = chars[k..].iter().collect();
-                        if let Some(rest) = tail.strip_prefix(".Close()") {
-                            let _ = rest;
+                        if tail.starts_with(".Close()") {
                             push(k + ".Close()".len(), "hint-close", "app.exit()");
+                        } else if tail.starts_with(".Hide()") {
+                            push(k + ".Hide()".len(), "hint-hide", "app.hide()");
                         } else {
                             push(k, "hint-me", "self");
                         }
@@ -432,6 +498,22 @@ pub fn lint_vb_habits(text: &str, ctx: &CompletionContext) -> Vec<Lint> {
                     "False" => push(k, "hint-bool", "false"),
                     "Nothing" => push(k, "hint-nothing", "None"),
                     "Dim" => push(k, "hint-dim", "let"),
+                    _ if ctx.is_form && ctx.forms.contains(&word) => {
+                        let tail: String = chars[k..].iter().collect();
+                        if tail.starts_with(".ShowDialog()") {
+                            push(
+                                k + ".ShowDialog()".len(),
+                                "hint-show-dialog",
+                                &format!("app.show_dialog(super::{word}::default())"),
+                            );
+                        } else if tail.starts_with(".Show()") {
+                            push(
+                                k + ".Show()".len(),
+                                "hint-show-form",
+                                &format!("app.show_form(super::{word}::default())"),
+                            );
+                        }
+                    }
                     _ => {
                         if ctx.is_form
                             && let Some((name, _)) = ctx
@@ -489,7 +571,26 @@ mod tests {
                 ("text_box1".into(), "TextBox".into()),
             ],
             is_form: true,
+            forms: vec!["Form1".into(), "Form2".into()],
         }
+    }
+
+    #[test]
+    fn multi_window_hints() {
+        let ctx = form_ctx();
+        let t = "app.show";
+        let (_, items) = complete(t, t.len(), &ctx);
+        assert!(labels(&items).contains(&"show_form(Form2)"));
+        assert!(labels(&items).contains(&"show_dialog(Form2)"));
+        let t = "Form2";
+        let (_, items) = complete(t, t.len(), &ctx);
+        assert_eq!(items[0].insert, "app.show_form(super::Form2::default());");
+        let lints = lint_vb_habits("    Form2.ShowDialog();\n    Me.Hide();\n", &ctx);
+        assert_eq!(
+            lints[0].fix.replacement,
+            "app.show_dialog(super::Form2::default())"
+        );
+        assert_eq!(lints[1].fix.replacement, "app.hide()");
     }
 
     fn labels(items: &[CompletionItem]) -> Vec<&str> {
@@ -520,7 +621,7 @@ mod tests {
         assert!(labels(&items).contains(&"push_str"));
         let t = "app.";
         let (_, items) = complete(t, t.len(), &ctx);
-        assert_eq!(labels(&items), ["exit()", "set_title(…)", "egui_ctx()"]);
+        assert!(labels(&items).starts_with(&["exit()", "close()", "hide()", "set_title(…)"]));
         // Fichier ordinaire : ni self ni app de VRS.
         let (_, items) = complete(t, t.len(), &CompletionContext::default());
         assert!(items.is_empty());

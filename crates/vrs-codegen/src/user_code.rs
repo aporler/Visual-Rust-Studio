@@ -65,6 +65,19 @@ pub fn ensure_handler(
     doc: &str,
     todo: &str,
 ) -> Result<Option<String>, String> {
+    ensure_handler_returning(src, type_name, handler, doc, todo, None)
+}
+
+/// Comme [`ensure_handler`], pour un gestionnaire qui retourne une valeur
+/// (`Closing` retourne `bool` : `true` accepte la fermeture).
+pub fn ensure_handler_returning(
+    src: &str,
+    type_name: &str,
+    handler: &str,
+    doc: &str,
+    todo: &str,
+    returns: Option<&str>,
+) -> Result<Option<String>, String> {
     let file = syn::parse_file(src).map_err(|e| {
         let start = e.span().start();
         format!("ligne {}, colonne {} : {e}", start.line, start.column + 1)
@@ -86,9 +99,17 @@ pub fn ensure_handler(
         return Ok(None);
     }
 
-    let method = format!(
-        "    /// {doc}\n    pub fn {handler}(&mut self, app: &mut AppContext) {{\n        // {todo}\n    }}\n"
-    );
+    let method = match returns {
+        Some("bool") => format!(
+            "    /// {doc}\n    pub fn {handler}(&mut self, app: &mut AppContext) -> bool {{\n        // {todo}\n        true\n    }}\n"
+        ),
+        Some(ty) => format!(
+            "    /// {doc}\n    pub fn {handler}(&mut self, app: &mut AppContext) -> {ty} {{\n        // {todo}\n        Default::default()\n    }}\n"
+        ),
+        None => format!(
+            "    /// {doc}\n    pub fn {handler}(&mut self, app: &mut AppContext) {{\n        // {todo}\n    }}\n"
+        ),
+    };
 
     let new_src = match impls.last() {
         Some(imp) => {

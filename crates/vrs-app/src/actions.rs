@@ -190,6 +190,22 @@ impl VrsApp {
             Command::OpenForm(name) => self.open_form(&name),
             Command::OpenFile { path, line } => self.open_file(&path, line),
             Command::OpenHandler(req) => self.open_handler(req),
+            Command::SetStartupForm(name) => {
+                if let Some(p) = self.project.as_mut() {
+                    p.file.startup_form = Some(name);
+                }
+                self.save_project_file();
+            }
+            Command::SetCloseStrategy(last) => {
+                if let Some(p) = self.project.as_mut() {
+                    p.file.close_strategy = if last {
+                        vrs_project::CloseStrategy::LastFormCloses
+                    } else {
+                        vrs_project::CloseStrategy::MainFormCloses
+                    };
+                }
+                self.save_project_file();
+            }
             Command::ShowStart => {
                 if let Some(i) = self.tabs.iter().position(|t| matches!(t, Tab::Start)) {
                     self.active = i;
@@ -309,6 +325,19 @@ impl VrsApp {
                 self.error(msg);
             }
         }
+    }
+
+    /// Enregistre le `.vrsproj` et régénère le code (fenêtre de démarrage, fermeture).
+    fn save_project_file(&mut self) {
+        let result = self.project.as_ref().map(|p| p.save());
+        if let Some(Err(e)) = result {
+            let msg = self
+                .i18n
+                .trf("error-save", &[("error", e.to_string().into())]);
+            self.error(msg);
+            return;
+        }
+        self.sync_code();
     }
 
     pub fn refresh_tree(&mut self) {
@@ -836,6 +865,7 @@ impl VrsApp {
         let Some(project) = &self.project else {
             return ctx;
         };
+        ctx.forms = project.file.forms.clone();
         for form in &project.file.forms {
             if same_path(&vrs_codegen::form_paths(&project.root, form).user, path) {
                 ctx.is_form = true;

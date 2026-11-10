@@ -131,7 +131,7 @@ fn form_properties(
         .num_columns(2)
         .striped(true)
         .show(ui, |ui| {
-            events_rows(ui, i18n, &events, &[EventKind::Load], None, out);
+            events_rows(ui, i18n, &events, &EventKind::FORM_EVENTS, None, out);
         });
 }
 

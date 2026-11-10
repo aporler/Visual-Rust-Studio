@@ -72,11 +72,38 @@ fn gui_project_compiles_without_vrs() {
     );
     std::fs::write(&user, &src).unwrap();
 
-    // Ajout de Form2 (conception seulement pour l'instant).
+    // Ajout de Form2 : une zone de texte et un bouton OK qui ferme la fenêtre.
     let mut project = open_project(&project.root).unwrap();
     project.add_form("Form2", &EnglishComments).unwrap();
     // Le code utilisateur n'a pas été touché.
     assert_eq!(std::fs::read_to_string(&user).unwrap(), src);
+    let mut form2 = project.load_form("Form2").unwrap();
+    form2.add_control(ComponentKind::TextBox, 16.0, 16.0);
+    let ok = form2.add_control(ComponentKind::Button, 16.0, 56.0);
+    form2
+        .control_mut(&ok)
+        .unwrap()
+        .events
+        .insert(EventKind::Click, EventKind::Click.default_handler(&ok));
+    form2.events.insert(
+        EventKind::Closing,
+        EventKind::Closing.default_handler("form2"),
+    );
+    form2.save(&project.form_path("Form2")).unwrap();
+    project.sync_code(&[], &EnglishComments).unwrap();
+    let user2 = project.root.join("src/forms/form2.rs");
+    let src2 = std::fs::read_to_string(&user2).unwrap();
+    assert!(src2.contains("pub fn form2_closing(&mut self, app: &mut AppContext) -> bool"));
+    let src2 = src2.replacen("// TODO: write your code here.", "app.close();", 1);
+    std::fs::write(&user2, src2).unwrap();
+    // Form1 ouvre Form2 en dialogue et récupère son texte à la fermeture.
+    let src = std::fs::read_to_string(&user).unwrap().replace(
+        "self.text_box1.text = String::from(\"Bonjour depuis Rust !\");",
+        "self.text_box1.text = String::from(\"Bonjour depuis Rust !\");\n        \
+         app.show_dialog_then(super::Form2::default(), |me: &mut Form1, f2: super::Form2, _app| {\n            \
+         me.text_box1.text = f2.text_box1.text;\n        });",
+    );
+    std::fs::write(&user, &src).unwrap();
 
     let (ok, stderr) = build(&project.root);
     assert!(ok, "échec de compilation :\n{stderr}");

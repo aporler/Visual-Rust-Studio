@@ -114,6 +114,10 @@ pub enum EventKind {
     TextChanged,
     /// Chargement de la fenêtre (premier affichage).
     Load,
+    /// Demande de fermeture de la fenêtre (le gestionnaire peut l'annuler).
+    Closing,
+    /// Fenêtre fermée.
+    Closed,
 }
 
 impl EventKind {
@@ -123,6 +127,8 @@ impl EventKind {
             Self::Click => "Click",
             Self::TextChanged => "TextChanged",
             Self::Load => "Load",
+            Self::Closing => "Closing",
+            Self::Closed => "Closed",
         }
     }
 
@@ -132,6 +138,8 @@ impl EventKind {
             Self::Click => "click",
             Self::TextChanged => "text_changed",
             Self::Load => "load",
+            Self::Closing => "closing",
+            Self::Closed => "closed",
         }
     }
 
@@ -141,6 +149,19 @@ impl EventKind {
             Self::Click => "event-click",
             Self::TextChanged => "event-text-changed",
             Self::Load => "event-load",
+            Self::Closing => "event-closing",
+            Self::Closed => "event-closed",
+        }
+    }
+
+    /// Événements de la fenêtre elle-même.
+    pub const FORM_EVENTS: [EventKind; 3] = [Self::Load, Self::Closing, Self::Closed];
+
+    /// Type de retour du gestionnaire (`Closing` retourne `bool` : `false` annule).
+    pub fn handler_return(self) -> Option<&'static str> {
+        match self {
+            Self::Closing => Some("bool"),
+            _ => None,
         }
     }
 

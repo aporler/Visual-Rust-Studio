@@ -462,3 +462,37 @@ fn syn_check(src: &str) {
     assert!(src.contains("impl Form1"), "{src}");
     assert_eq!(src.matches('{').count(), src.matches('}').count(), "{src}");
 }
+
+/// Phase 5 : fenêtre de démarrage, stratégie de fermeture, gestionnaire Closing.
+#[test]
+fn startup_form_close_strategy_and_closing_handler() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(app_in(dir.path(), "fr-CA"));
+    h.state_mut().create_project(ProjectKind::Gui, dir.path(), "Multi");
+    h.run();
+    h.state_mut().add_form("Form2");
+    h.run();
+    run_cmd(&mut h, Command::SetStartupForm("Form2".into()));
+    run_cmd(&mut h, Command::SetCloseStrategy(true));
+    let root = h.state().project.as_ref().unwrap().root.clone();
+    let mod_rs = std::fs::read_to_string(root.join("src/forms/mod.rs")).unwrap();
+    assert!(mod_rs.contains("pub fn startup_form() -> Form2"), "{mod_rs}");
+    assert!(mod_rs.contains("CloseStrategy::LastFormCloses"), "{mod_rs}");
+    let reopened = vrs_project::open_project(&root).unwrap();
+    assert_eq!(reopened.file.startup_form.as_deref(), Some("Form2"));
+
+    // Gestionnaire Closing (fenêtre) : il retourne bool.
+    run_cmd(
+        &mut h,
+        Command::OpenHandler(HandlerRequest {
+            control: None,
+            event: EventKind::Closing,
+        }),
+    );
+    let app = h.state();
+    let Some(Tab::Code(e)) = app.active_tab() else { panic!() };
+    assert!(e.text.contains("pub fn form2_closing(&mut self, app: &mut AppContext) -> bool"));
+    assert!(e.completion.forms.contains(&"Form1".to_string()));
+    let designer = std::fs::read_to_string(root.join("src/forms/form2_designer.rs")).unwrap();
+    assert!(designer.contains("fn closing(&mut self, app: &mut AppContext) -> bool"));
+}

@@ -48,7 +48,7 @@ fn event_condition(event: EventKind) -> Option<TokenStream> {
     match event {
         EventKind::Click => Some(quote!(clicked())),
         EventKind::TextChanged => Some(quote!(changed())),
-        EventKind::Load => None,
+        EventKind::Load | EventKind::Closing | EventKind::Closed => None,
     }
 }
 
@@ -122,6 +122,22 @@ pub fn generate_designer(form: &FormDocument) -> String {
             }
         }
     });
+    let closing_fn = form.events.get(&EventKind::Closing).map(|h| {
+        let h = ident(h);
+        quote! {
+            fn closing(&mut self, app: &mut AppContext) -> bool {
+                self.#h(app)
+            }
+        }
+    });
+    let closed_fn = form.events.get(&EventKind::Closed).map(|h| {
+        let h = ident(h);
+        quote! {
+            fn closed(&mut self, app: &mut AppContext) {
+                self.#h(app);
+            }
+        }
+    });
 
     let struct_doc = format!(
         " Fenêtre `{}` : un champ par contrôle placé dans le concepteur.",
@@ -162,6 +178,8 @@ pub fn generate_designer(form: &FormDocument) -> String {
             }
 
             #load_fn
+            #closing_fn
+            #closed_fn
         }
     };
     let parsed: syn::File = syn::parse2(file).expect("le générateur produit du Rust valide");
@@ -174,7 +192,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
 }
 
 /// Génère `src/forms/mod.rs`.
-pub fn generate_forms_mod(forms: &[FormDocument], startup: &str) -> String {
+pub fn generate_forms_mod(forms: &[FormDocument], startup: &str, last_form_closes: bool) -> String {
     let mut mods = Vec::new();
     let mut uses = Vec::new();
     for f in forms {
@@ -193,10 +211,17 @@ pub fn generate_forms_mod(forms: &[FormDocument], startup: &str) -> String {
             }
         }
     });
+    let strategy = if last_form_closes {
+        quote!(LastFormCloses)
+    } else {
+        quote!(MainFormCloses)
+    };
     let file: TokenStream = quote! {
         #(#mods)*
         #(#uses)*
         #startup_fn
+        /// Comportement à la fermeture de la fenêtre principale.
+        pub const CLOSE_STRATEGY: crate::vrs::CloseStrategy = crate::vrs::CloseStrategy::#strategy;
     };
     let parsed: syn::File = syn::parse2(file).expect("mod.rs valide");
     format!(
@@ -258,7 +283,8 @@ mod tests {
 
     #[test]
     fn forms_mod() {
-        let src = generate_forms_mod(&[sample(), FormDocument::new("Form2")], "Form1");
+        let src = generate_forms_mod(&[sample(), FormDocument::new("Form2")], "Form1", false);
+        assert!(src.contains("CloseStrategy::MainFormCloses"));
         assert!(src.contains("mod form1;"));
         assert!(src.contains("mod form2_designer;"));
         assert!(src.contains("pub use form1_designer::Form1;"));

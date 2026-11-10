@@ -258,3 +258,8 @@ editor-generated-warning = Ce fichier est généré par Visual Rust Studio et se
 codegen-handler-doc = Gère l'événement { $event } de `{ $control }`.
 codegen-todo = À FAIRE : écrivez votre code ici.
 codegen-user-file-doc = Code de la fenêtre { $form }. Ce fichier vous appartient : Visual Rust Studio y ajoute seulement de nouveaux gestionnaires d'événements et ne modifie jamais le code existant.
+
+cmd-set-startup-form = Définir comme fenêtre de démarrage
+menu-close-strategy = À la fermeture de la fenêtre principale
+close-strategy-main = Fermer l'application
+close-strategy-last = La masquer ; fermer l'application avec la dernière fenêtre

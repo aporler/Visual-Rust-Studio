@@ -45,9 +45,17 @@ pub enum Command {
     About,
     OpenUrl(String),
     Layout(LayoutOp),
-    Reorder { to_front: bool },
+    Reorder {
+        to_front: bool,
+    },
     OpenForm(String),
-    OpenFile { path: PathBuf, line: Option<usize> },
+    OpenFile {
+        path: PathBuf,
+        line: Option<usize>,
+    },
     OpenHandler(HandlerRequest),
     ShowStart,
+    SetStartupForm(String),
+    /// `true` : l'application se ferme avec la dernière fenêtre.
+    SetCloseStrategy(bool),
 }

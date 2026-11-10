@@ -40,7 +40,7 @@
 | 9 | Create a Click event | ✅ | double-click the control, or the button in the Properties panel |
 | 10 | Change the text box text on click | ✅ | `self.text_box1.text = …` in the handler; verified by a runtime test (simulated click) |
 | 11 | Add Form2 | ✅ | Project → Add Window |
-| 12 | Open and close Form2 | ⏳ **to do (phase 5)** | Form2 can be designed and builds, but the runtime cannot open it at run time yet. No placeholder method is exposed. |
+| 12 | Open and close Form2 | ✅ | `app.show_form(Form2::default())`, `app.show_dialog(…)` (modal), `app.close()`, `app.hide()`, `show_dialog_then` to get data back, `with_form` to reach another window, multiple instances, close strategy |
 | 13 | Build with Cargo | ✅ | Build, Run, Check, Clippy, Tests, Clean, Stop, Release mode |
 | 14 | Run independently of VRS | ✅ | standalone Cargo project (copied runtime, only dependency: eframe) |
 | 15 | Rust diagnostics and explanations | ✅ partial | `cargo check` diagnostics (list, underline, tooltip, original message, documentation link, rustc suggestions); explanations for 17 error codes and 4 lints; automatic check on save; compiler suggestions applicable as quick fixes. **No rust-analyzer yet.** |
@@ -54,6 +54,10 @@
 - **Editor**: Rust syntax highlighting, line numbers, auto-indent, tabs
   replaced by spaces, find/replace, go to line, rustfmt (command and on save),
   warning on generated files.
+- **Multiple windows**: native windows (egui viewports) or sub-windows when
+  the platform has a single window; simulated modal dialogs (the other windows
+  are disabled); Load, Closing (can cancel) and Closed events; startup window
+  and close strategy chosen in the IDE.
 - **Code assistance**: completion while typing or with Ctrl+Space (window
   controls `self.text_box1`, their properties `.text`, `.visible`…, String
   methods, `app.exit()`, `app.set_title()`, Rust keywords and snippets), with a
@@ -79,6 +83,7 @@
   egui 0.37).
 - No bracket matching, no minimap.
 - Renaming a window (Form1 → MainForm) is not possible yet.
+- Modal dialogs are simulated: the operating system does not treat them as modal.
 - Background/Foreground/Font, Anchor and Layout are not properties yet.
 
 ---
@@ -119,7 +124,7 @@
 | 9 | Créer un événement Click | ✅ | double-clic sur le contrôle, ou bouton dans le panneau Propriétés |
 | 10 | Modifier le texte du champ lors du clic | ✅ | `self.text_box1.text = …` dans le gestionnaire ; vérifié par un test du runtime (clic simulé) |
 | 11 | Ajouter Form2 | ✅ | Projet → Ajouter une fenêtre |
-| 12 | Ouvrir et fermer Form2 | ⏳ **à faire (phase 5)** | Form2 se conçoit et compile, mais le runtime ne sait pas encore l'ouvrir à l'exécution. Aucune méthode fictive n'est exposée. |
+| 12 | Ouvrir et fermer Form2 | ✅ | `app.show_form(Form2::default())`, `app.show_dialog(…)` (modale), `app.close()`, `app.hide()`, `show_dialog_then` pour récupérer les données, `with_form` pour accéder à une autre fenêtre, plusieurs instances, stratégie de fermeture |
 | 13 | Compiler avec Cargo | ✅ | Compiler, Exécuter, Vérifier, Clippy, Tests, Nettoyer, Arrêter, mode Release |
 | 14 | Exécuter indépendamment de VRS | ✅ | projet Cargo autonome (runtime copié, seule dépendance : eframe) |
 | 15 | Diagnostics Rust et explications | ✅ partiel | diagnostics de `cargo check` (liste, soulignement, infobulle, message original, lien vers la documentation, suggestions de rustc) ; explications pour 17 codes d'erreur et 4 lints ; vérification automatique à l'enregistrement ; suggestions du compilateur applicables en correction rapide. **Pas encore de rust-analyzer.** |
@@ -135,6 +140,10 @@
   tabulation remplacée par des espaces, rechercher/remplacer, aller à la ligne,
   rustfmt (commande et à l'enregistrement), avertissement sur les fichiers
   générés.
+- **Multifenêtre** : fenêtres natives (viewports egui) ou sous-fenêtres si la
+  plateforme n'a qu'une fenêtre ; dialogues modaux simulés (les autres
+  fenêtres sont désactivées) ; événements Load, Closing (annulable) et
+  Closed ; fenêtre de démarrage et stratégie de fermeture choisies dans l'IDE.
 - **Aide au code** : autocomplétion pendant la frappe ou avec Ctrl+Espace
   (contrôles de la fenêtre `self.text_box1`, leurs propriétés `.text`,
   `.visible`…, méthodes de String, `app.exit()`, `app.set_title()`, mots-clés
@@ -163,5 +172,6 @@
   egui 0.37).
 - Pas de correspondance des parenthèses ni de minimap.
 - Le renommage d'une fenêtre (Form1 → MainForm) n'est pas encore possible.
+- Les dialogues modaux sont simulés : le système d'exploitation ne les traite pas comme modaux.
 - Les polices Background/Foreground/Font, Anchor et Layout ne sont pas encore
   des propriétés.

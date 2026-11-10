@@ -38,7 +38,7 @@ mod forms;
 mod vrs;
 
 fn main() -> eframe::Result {
-    vrs::run(forms::startup_form())
+    vrs::run_with(forms::startup_form(), forms::CLOSE_STRATEGY)
 }
 "#;
 

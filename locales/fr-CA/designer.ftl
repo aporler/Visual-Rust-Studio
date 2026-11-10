@@ -52,3 +52,6 @@ event-load = Load (chargement)
 events-none = (aucun)
 events-create = Créer le gestionnaire
 events-go-to = Aller au code
+
+event-closing = Closing (fermeture demandée)
+event-closed = Closed (fenêtre fermée)

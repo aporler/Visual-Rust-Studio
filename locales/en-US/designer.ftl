@@ -52,3 +52,6 @@ event-load = Load
 events-none = (none)
 events-create = Create handler
 events-go-to = Go to code
+
+event-closing = Closing
+event-closed = Closed

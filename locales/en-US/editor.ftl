@@ -51,3 +51,14 @@ hint-dim = In Rust, declare a variable with `let` (`let mut` if its value change
 hint-bool = Rust booleans are written in lowercase: `true` and `false`.
 hint-nothing = Rust has no Nothing/null: an optional value is an `Option`, and its absence is `None`.
 hint-print = To write to the console: `println!("…");` (Console.WriteLine in VB.NET).
+
+api-app-close = Closes this window (the application stays open if other windows remain).
+api-app-hide = Hides this window; it keeps its state.
+api-app-set-size = Changes the size of this window: `app.set_size(400.0, 300.0)`.
+api-app-show-form = Opens a new { $form } window. It returns a FormId to use with `close_form`, `hide_form` or `with_form`.
+api-app-show-dialog = Opens { $form } as a modal dialog: the other windows are disabled until it closes. Use `show_dialog_then` to get its data back.
+api-app-show-hidden = Shows a hidden window again (FormId).
+api-app-with-form = Reads or changes the controls of another open window: `app.with_form::<Form2, _>(id, |f| f.text_box1.text.clone())`.
+hint-show-form = In Visual Rust Studio, a window is opened with `app.show_form({ $form }::default())` (Form.Show() in VB.NET).
+hint-show-dialog = Modal window: `app.show_dialog({ $form }::default())` (ShowDialog() in VB.NET). To get data back when it closes: `app.show_dialog_then(…)`.
+hint-hide = To hide the current window: `app.hide()` (Me.Hide() in VB.NET).

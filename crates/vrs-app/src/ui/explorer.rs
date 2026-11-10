@@ -85,6 +85,16 @@ pub fn explorer(app: &mut VrsApp, ui: &mut egui::Ui) {
                                     app.cmd(Command::OpenFile { path, line: None });
                                     ui.close();
                                 }
+                                if ui
+                                    .add_enabled(
+                                        !startup,
+                                        egui::Button::new(app.i18n.tr("cmd-set-startup-form")),
+                                    )
+                                    .clicked()
+                                {
+                                    app.cmd(Command::SetStartupForm(form.clone()));
+                                    ui.close();
+                                }
                             });
                         }
                         if ui
