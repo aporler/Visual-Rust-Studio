@@ -68,6 +68,9 @@ pub struct Control {
     /// PictureBox : image, chemin relatif au projet (`resources/logo.png`).
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub image: String,
+    /// Menu contextuel (clic droit).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub context_menu: Vec<MenuItem>,
 }
 
 /// Côtés de la fenêtre auxquels un contrôle reste attaché (Anchor).
@@ -144,6 +147,7 @@ impl Control {
             font_size: None,
             anchor: Anchor::default(),
             image: String::new(),
+            context_menu: Vec::new(),
         }
     }
 
@@ -465,6 +469,9 @@ impl FormDocument {
         }
         let mut items = Vec::new();
         MenuItem::walk(&self.menu, &mut items);
+        for c in &self.controls {
+            MenuItem::walk(&c.context_menu, &mut items);
+        }
         for m in items {
             if let Some(h) = &m.click {
                 v.push((h.clone(), Some(m.name.clone()), EventKind::Click));
@@ -486,7 +493,25 @@ impl FormDocument {
             }
             None
         }
-        find(&mut self.menu, name)
+        if let Some(f) = find(&mut self.menu, name) {
+            return Some(f);
+        }
+        self.controls
+            .iter_mut()
+            .find_map(|c| find(&mut c.context_menu, name))
+    }
+
+    /// Noms déjà utilisés (contrôles et éléments de menus), pour nommer de
+    /// nouveaux éléments sans collision.
+    pub fn used_names(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.controls.iter().map(|c| c.name.clone()).collect();
+        let mut items = Vec::new();
+        MenuItem::walk(&self.menu, &mut items);
+        for c in &self.controls {
+            MenuItem::walk(&c.context_menu, &mut items);
+        }
+        v.extend(items.iter().map(|m| m.name.clone()));
+        v
     }
 
     /// Problèmes qui empêcheraient la génération de code.
@@ -506,6 +531,9 @@ impl FormDocument {
         }
         let mut items = Vec::new();
         MenuItem::walk(&self.menu, &mut items);
+        for c in &self.controls {
+            MenuItem::walk(&c.context_menu, &mut items);
+        }
         for m in items {
             if !vrs_core::ident::is_snake_case_ident(&m.name) {
                 problems.push(format!("nom d'élément de menu invalide : {}", m.name));

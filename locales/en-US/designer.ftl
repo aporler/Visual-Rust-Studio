@@ -106,3 +106,4 @@ prop-menu-placeholder = File
     Open
     Quit
 prop-menu-hint = One item per line; indent with two spaces for a submenu. Items without submenu have a Click event.
+prop-context-menu = Context menu (right click)

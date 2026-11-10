@@ -64,7 +64,8 @@ pub struct DesignerState {
     pub(crate) name_edit: Option<(String, String)>,
     pub(crate) preview_states: std::collections::HashMap<String, Control>,
     /// Texte du menu en cours d'édition (une ligne par élément).
-    pub(crate) menu_text: Option<String>,
+    /// (contrôle éventuel, texte) : barre de menus ou menu contextuel.
+    pub(crate) menu_text: Option<(Option<String>, String)>,
 }
 
 impl DesignerState {

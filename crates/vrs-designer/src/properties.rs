@@ -115,11 +115,14 @@ pub fn properties_ui(ui: &mut egui::Ui, state: &mut DesignerState, i18n: &I18n) 
         .show(ui, |ui| match state.selection.len() {
             0 => {
                 form_properties(ui, state, i18n, &mut out);
-                menu_editor(ui, state, i18n, &mut out);
+                menu_editor(ui, state, i18n, &mut out, None);
             }
             1 => {
                 let name = state.selection[0].clone();
                 control_properties(ui, state, &name, i18n, &mut out);
+                if state.doc.control(&name).is_some() {
+                    menu_editor(ui, state, i18n, &mut out, Some(name));
+                }
             }
             n => {
                 ui.label(i18n.trf("designer-multi-selection", &[("count", n.into())]));
@@ -184,28 +187,71 @@ fn menu_editor(
     state: &mut DesignerState,
     i18n: &I18n,
     out: &mut DesignerOutput,
+    target: Option<String>,
 ) {
     ui.add_space(6.0);
-    ui.strong(i18n.tr("prop-menu"));
-    let mut text = state
-        .menu_text
-        .clone()
-        .unwrap_or_else(|| vrs_components::MenuItem::to_outline(&state.doc.menu));
+    ui.strong(i18n.tr(if target.is_some() {
+        "prop-context-menu"
+    } else {
+        "prop-menu"
+    }));
+    let current = match &target {
+        Some(name) => state
+            .doc
+            .control(name)
+            .map(|c| c.context_menu.clone())
+            .unwrap_or_default(),
+        None => state.doc.menu.clone(),
+    };
+    let mut text = match &state.menu_text {
+        Some((t, buf)) if *t == target => buf.clone(),
+        _ => vrs_components::MenuItem::to_outline(&current),
+    };
     let r = ui
         .add(
             egui::TextEdit::multiline(&mut text)
+                .id_salt(("vrs-menu-edit", &target))
                 .code_editor()
                 .desired_rows(4)
                 .hint_text(i18n.tr("prop-menu-placeholder")),
         )
         .on_hover_text(i18n.tr("prop-menu-hint"));
     if r.changed() {
-        let taken: Vec<String> = state.doc.controls.iter().map(|c| c.name.clone()).collect();
-        state.doc.menu = vrs_components::MenuItem::from_outline(&text, &state.doc.menu, &taken);
+        let taken: Vec<String> = state
+            .doc
+            .used_names()
+            .into_iter()
+            .filter(|n| {
+                let mut own = Vec::new();
+                vrs_components::MenuItem::walk(&current, &mut own);
+                !own.iter().any(|m| &m.name == n)
+            })
+            .collect();
+        let parsed = vrs_components::MenuItem::from_outline(&text, &current, &taken);
+        match &target {
+            Some(name) => {
+                if let Some(c) = state.doc.control_mut(name) {
+                    c.context_menu = parsed;
+                }
+            }
+            None => state.doc.menu = parsed,
+        }
     }
-    state.menu_text = r.has_focus().then_some(text);
+    if r.has_focus() {
+        state.menu_text = Some((target.clone(), text));
+    } else if state.menu_text.as_ref().is_some_and(|(t, _)| *t == target) {
+        state.menu_text = None;
+    }
+    let menu = match &target {
+        Some(name) => state
+            .doc
+            .control(name)
+            .map(|c| c.context_menu.clone())
+            .unwrap_or_default(),
+        None => state.doc.menu.clone(),
+    };
     let mut items = Vec::new();
-    vrs_components::MenuItem::walk(&state.doc.menu, &mut items);
+    vrs_components::MenuItem::walk(&menu, &mut items);
     let leaves: Vec<(String, String, Option<String>)> = items
         .iter()
         .filter(|m| m.children.is_empty())

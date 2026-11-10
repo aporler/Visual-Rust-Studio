@@ -147,6 +147,27 @@ pub fn generate_designer(form: &FormDocument) -> String {
         let init = state_init(c);
         quote!(#name: #init)
     });
+    let ctx_fields = form
+        .controls
+        .iter()
+        .filter(|c| !c.context_menu.is_empty())
+        .map(|c| {
+            let f = ident(&format!("{}_menu", c.name));
+            let doc = format!(" Menu contextuel de `{}`.", c.name);
+            quote! {
+                #[doc = #doc]
+                pub #f: Vec<vrs::MenuItemState>,
+            }
+        });
+    let ctx_inits = form
+        .controls
+        .iter()
+        .filter(|c| !c.context_menu.is_empty())
+        .map(|c| {
+            let f = ident(&format!("{}_menu", c.name));
+            let v = menu_init(&c.context_menu);
+            quote!(#f: #v,)
+        });
     let has_menu = !form.menu.is_empty();
     let menu_field = has_menu.then(|| {
         quote! {
@@ -189,6 +210,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
     let mut ordered: Vec<&Control> = form.controls.iter().collect();
     ordered.sort_by_key(|c| !c.kind.is_container());
     let mut exclusive = Vec::new();
+    let mut context = Vec::new();
     for c in ordered {
         let name = ident(&c.name);
         let name_str = c.name.as_str();
@@ -222,7 +244,33 @@ pub fn generate_designer(form: &FormDocument) -> String {
                 }
             });
         }
-        if handlers.is_empty() && others.is_empty() {
+        if !c.context_menu.is_empty() {
+            let field = ident(&format!("{}_menu", c.name));
+            let clicked = ident(&format!("{}_menu_clicked", c.name));
+            let mut items = Vec::new();
+            MenuItem::walk(&c.context_menu, &mut items);
+            let arms: Vec<TokenStream> = items
+                .iter()
+                .filter_map(|m| {
+                    let h = ident(m.click.as_ref()?);
+                    let n = &m.name;
+                    Some(quote!(Some(#n) => self.#h(app),))
+                })
+                .collect();
+            if arms.is_empty() {
+                context.push(quote!(let _ = vrs::context_menu(&#name, &self.#field);));
+            } else {
+                uses_app = true;
+                context.push(quote! {
+                    let #clicked = vrs::context_menu(&#name, &self.#field);
+                    match #clicked.as_deref() {
+                        #(#arms)*
+                        _ => {}
+                    }
+                });
+            }
+        }
+        if handlers.is_empty() && others.is_empty() && c.context_menu.is_empty() {
             draws.push(quote!(let _ = vrs::#render(ui, #name_str, #arg);));
         } else {
             uses_app |= !handlers.is_empty();
@@ -294,6 +342,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
         pub struct #form_ty {
             #(#fields,)*
             #menu_field
+            #(#ctx_fields)*
         }
 
         impl Default for #form_ty {
@@ -301,6 +350,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
                 Self {
                     #(#inits,)*
                     #menu_init_field
+                    #(#ctx_inits)*
                 }
             }
         }
@@ -320,6 +370,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
                 #menu_draw
                 #(#draws)*
                 #(#exclusive)*
+                #(#context)*
                 #(#dispatch)*
                 #menu_dispatch
             }
@@ -463,6 +514,21 @@ mod tests {
         assert!(src.contains("vrs::MenuItemState::new(\"menu_quitter\", \"Quitter\", vec![])"));
         assert!(src.contains("let menu_clicked = vrs::menu_bar(ui, &self.menu);"));
         assert!(src.contains("Some(\"menu_quitter\") => self.menu_quitter_click(app),"));
+    }
+
+    #[test]
+    fn context_menu_generation() {
+        let mut f = FormDocument::new("Form1");
+        let b = f.add_control(ComponentKind::Button, 0.0, 0.0);
+        let c = f.control_mut(&b).unwrap();
+        c.context_menu = MenuItem::from_outline("Copier\n", &[], &[]);
+        c.context_menu[0].click = Some("menu_copier_click".into());
+        let src = generate_designer(&f);
+        syn::parse_file(&src).unwrap();
+        assert!(src.contains("pub button1_menu: Vec<vrs::MenuItemState>"));
+        assert!(src.contains("let button1 = vrs::button("));
+        assert!(src.contains("vrs::context_menu(&button1, &self.button1_menu)"));
+        assert!(src.contains("Some(\"menu_copier\") => self.menu_copier_click(app),"));
     }
 
     #[test]

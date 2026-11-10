@@ -55,7 +55,7 @@ actions, bracket matching, minimap.
 Done: CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,
 GroupBox, Panel; message box; debugging through DAP (`vrs-debugger`);
 BackColor, ForeColor, font size; Anchor; PictureBox and image resources;
-menu bar (MenuStrip).
+menu bar (MenuStrip); context menus.
 - Debugging via DAP (CodeLLDB / lldb-dap, GDB): breakpoints, stepping,
   variables, call stack, threads, panics. `vrs-debugger` crate.
 - Components: CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,
@@ -124,7 +124,7 @@ parenthèses, minimap.
 Fait : CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,
 GroupBox, Panel ; boîte de message ; débogage via DAP (`vrs-debugger`) ;
 BackColor, ForeColor, taille de police ; Anchor ; PictureBox et ressources
-d'images ; barre de menus (MenuStrip).
+d'images ; barre de menus (MenuStrip) ; menus contextuels.
 - Débogage via DAP (CodeLLDB / lldb-dap, GDB) : points d'arrêt, pas à pas,
   variables, pile, threads, paniques. Crate `vrs-debugger`.
 - Composants : CheckBox, RadioButton, ComboBox, ListBox, ProgressBar, Slider,

@@ -93,6 +93,11 @@ fn gui_project_compiles_without_vrs() {
     form.menu =
         vrs_components::MenuItem::from_outline("Fichier\n  Quitter\nAide\n  À propos\n", &[], &[]);
     form.menu[0].children[0].click = Some("menu_quitter_click".into());
+    // Menu contextuel sur le bouton.
+    let taken = form.used_names();
+    let b = form.control_mut(&button).unwrap();
+    b.context_menu = vrs_components::MenuItem::from_outline("Effacer\n", &[], &taken);
+    b.context_menu[0].click = Some("menu_effacer_click".into());
     form.control_mut(&button).unwrap().text = "Dire bonjour".into();
     // Double-clic sur le bouton : création du gestionnaire Click.
     form.control_mut(&button)

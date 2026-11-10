@@ -138,6 +138,31 @@ pub fn menu_item<'a>(items: &'a mut [MenuItemState], name: &str) -> Option<&'a m
     None
 }
 
+fn menu_entries(ui: &mut egui::Ui, items: &[MenuItemState], clicked: &mut Option<String>) {
+    for i in items.iter().filter(|i| i.visible) {
+        if i.children.is_empty() {
+            if ui
+                .add_enabled(i.enabled, egui::Button::new(i.text.as_str()))
+                .clicked()
+            {
+                *clicked = Some(i.name.clone());
+                ui.close();
+            }
+        } else {
+            ui.add_enabled_ui(i.enabled, |ui| {
+                ui.menu_button(i.text.as_str(), |ui| menu_entries(ui, &i.children, clicked));
+            });
+        }
+    }
+}
+
+/// Menu contextuel (clic droit) d'un contrôle. Retourne le nom de l'élément cliqué.
+pub fn context_menu(response: &egui::Response, items: &[MenuItemState]) -> Option<String> {
+    let mut clicked = None;
+    response.context_menu(|ui| menu_entries(ui, items, &mut clicked));
+    clicked
+}
+
 /// Dessine la barre de menus en haut de la fenêtre ; les contrôles sont placés
 /// en dessous. Retourne le nom de l'élément cliqué.
 pub fn menu_bar(ui: &mut egui::Ui, items: &[MenuItemState]) -> Option<String> {
@@ -146,30 +171,13 @@ pub fn menu_bar(ui: &mut egui::Ui, items: &[MenuItemState]) -> Option<String> {
     ui.data_mut(|d| d.insert_temp(key, MENU_HEIGHT));
     let rect = egui::Rect::from_min_size(area.min, egui::vec2(area.width(), MENU_HEIGHT));
     let mut clicked = None;
-    fn entries(ui: &mut egui::Ui, items: &[MenuItemState], clicked: &mut Option<String>) {
-        for i in items.iter().filter(|i| i.visible) {
-            if i.children.is_empty() {
-                if ui
-                    .add_enabled(i.enabled, egui::Button::new(i.text.as_str()))
-                    .clicked()
-                {
-                    *clicked = Some(i.name.clone());
-                    ui.close();
-                }
-            } else {
-                ui.add_enabled_ui(i.enabled, |ui| {
-                    ui.menu_button(i.text.as_str(), |ui| entries(ui, &i.children, clicked));
-                });
-            }
-        }
-    }
     ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
         egui::Frame::NONE
             .fill(ui.visuals().faint_bg_color)
             .inner_margin(egui::Margin::symmetric(4, 2))
             .show(ui, |ui| {
                 ui.set_min_size(rect.size() - egui::vec2(8.0, 4.0));
-                egui::MenuBar::new().ui(ui, |ui| entries(ui, items, &mut clicked));
+                egui::MenuBar::new().ui(ui, |ui| menu_entries(ui, items, &mut clicked));
             });
     });
     clicked

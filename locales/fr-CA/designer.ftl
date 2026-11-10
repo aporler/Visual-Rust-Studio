@@ -106,3 +106,4 @@ prop-menu-placeholder = Fichier
     Ouvrir
     Quitter
 prop-menu-hint = Un élément par ligne ; indentez de deux espaces pour un sous-menu. Les éléments sans sous-menu ont un événement Click.
+prop-context-menu = Menu contextuel (clic droit)
