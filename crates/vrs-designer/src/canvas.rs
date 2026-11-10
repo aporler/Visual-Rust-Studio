@@ -146,6 +146,13 @@ fn render_control(ui: &mut egui::Ui, c: &mut Control, root: &std::path::Path) ->
     }
 }
 
+fn to_menu_state(items: &[vrs_components::MenuItem]) -> Vec<vrs_runtime::MenuItemState> {
+    items
+        .iter()
+        .map(|i| vrs_runtime::MenuItemState::new(&i.name, &i.text, to_menu_state(&i.children)))
+        .collect()
+}
+
 /// Affiche la surface de conception.
 pub fn canvas_ui(
     ui: &mut egui::Ui,
@@ -183,7 +190,12 @@ pub fn canvas_ui(
             );
             let client =
                 Rect::from_min_max(pos2(window.left(), window.top() + TITLE_BAR), window.max);
-            let origin = client.min;
+            let menu_h = if state.doc.menu.is_empty() {
+                0.0
+            } else {
+                vrs_runtime::MENU_HEIGHT
+            };
+            let origin = client.min + vec2(0.0, menu_h);
             let visuals = ui.visuals().clone();
             let painter = ui.painter_at(area);
 
@@ -250,8 +262,12 @@ pub fn canvas_ui(
             // Cadres d'abord (derrière), comme dans l'application générée.
             let mut controls = state.doc.controls.clone();
             controls.sort_by_key(|c| !c.kind.is_container());
+            let menu_preview: Vec<vrs_runtime::MenuItemState> = to_menu_state(&state.doc.menu);
             ui.scope_builder(egui::UiBuilder::new().max_rect(client), |ui| {
                 ui.set_clip_rect(client.intersect(ui.clip_rect()));
+                if !menu_preview.is_empty() {
+                    let _ = vrs_runtime::menu_bar(ui, &menu_preview);
+                }
                 for c in &controls {
                     if preview {
                         // Aperçu : l'état interactif est conservé entre les images.

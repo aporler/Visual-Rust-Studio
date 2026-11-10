@@ -15,5 +15,6 @@ pub mod ops;
 
 pub use component::{ComponentKind, EventKind, Feature};
 pub use form::{
-    Anchor, Control, FORM_EXTENSION, FORM_FORMAT_VERSION, FormDocument, FormError, NameError,
+    Anchor, Control, FORM_EXTENSION, FORM_FORMAT_VERSION, FormDocument, FormError, MenuItem,
+    NameError,
 };

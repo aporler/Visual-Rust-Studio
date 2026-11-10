@@ -101,3 +101,8 @@ component-picturebox = PictureBox
 component-picturebox-desc = Displays an image from the project resources.
 prop-image = Image
 prop-image-import = Import an image into the project resources…
+prop-menu = Menu bar (MenuStrip)
+prop-menu-placeholder = File
+    Open
+    Quit
+prop-menu-hint = One item per line; indent with two spaces for a submenu. Items without submenu have a Click event.

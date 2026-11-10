@@ -169,6 +169,132 @@ pub struct FormDocument {
     /// Contrôles, dans l'ordre d'affichage (le dernier est au premier plan).
     #[serde(default)]
     pub controls: Vec<Control>,
+    /// Barre de menus (MenuStrip) ; vide : pas de menu.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub menu: Vec<MenuItem>,
+}
+
+/// Élément de la barre de menus.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MenuItem {
+    /// Nom Rust (`menu_ouvrir`), unique dans la fenêtre.
+    pub name: String,
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<MenuItem>,
+    /// Gestionnaire de l'événement Click.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub click: Option<String>,
+}
+
+impl MenuItem {
+    /// Tous les éléments (parcours en profondeur).
+    pub fn walk<'a>(items: &'a [MenuItem], out: &mut Vec<&'a MenuItem>) {
+        for i in items {
+            out.push(i);
+            Self::walk(&i.children, out);
+        }
+    }
+
+    /// Texte d'édition : un élément par ligne, deux espaces par niveau.
+    pub fn to_outline(items: &[MenuItem]) -> String {
+        fn go(items: &[MenuItem], depth: usize, out: &mut String) {
+            for i in items {
+                out.push_str(&"  ".repeat(depth));
+                out.push_str(&i.text);
+                out.push('\n');
+                go(&i.children, depth + 1, out);
+            }
+        }
+        let mut s = String::new();
+        go(items, 0, &mut s);
+        s
+    }
+
+    /// Analyse le texte d'édition. Les noms et gestionnaires existants sont
+    /// conservés pour les éléments dont le texte n'a pas changé.
+    pub fn from_outline(text: &str, previous: &[MenuItem], taken: &[String]) -> Vec<MenuItem> {
+        let mut old = Vec::new();
+        Self::walk(previous, &mut old);
+        let mut used: Vec<String> = taken.to_vec();
+        let mut flat: Vec<(usize, MenuItem)> = Vec::new();
+        for line in text.lines() {
+            if line.trim().is_empty() {
+                continue;
+            }
+            let depth = (line.len() - line.trim_start().len()) / 2;
+            let label = line.trim().to_owned();
+            let reuse = old
+                .iter()
+                .find(|o| o.text == label && !used.contains(&o.name))
+                .map(|o| (o.name.clone(), o.click.clone()));
+            let (name, click) = reuse.unwrap_or_else(|| {
+                let ascii: String = label
+                    .to_lowercase()
+                    .chars()
+                    .map(|c| {
+                        let c = match c {
+                            'à' | 'â' | 'ä' | 'á' => 'a',
+                            'é' | 'è' | 'ê' | 'ë' => 'e',
+                            'î' | 'ï' | 'í' => 'i',
+                            'ô' | 'ö' | 'ó' => 'o',
+                            'ù' | 'û' | 'ü' | 'ú' => 'u',
+                            'ç' => 'c',
+                            'ñ' => 'n',
+                            other => other,
+                        };
+                        if c.is_ascii_alphanumeric() {
+                            c.to_ascii_lowercase()
+                        } else {
+                            '_'
+                        }
+                    })
+                    .collect();
+                let base = format!("menu_{}", ascii.trim_matches('_'))
+                    .split('_')
+                    .filter(|p| !p.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("_");
+                let mut name = base.clone();
+                let mut n = 2;
+                while used.contains(&name) {
+                    name = format!("{base}{n}");
+                    n += 1;
+                }
+                (name, None)
+            });
+            used.push(name.clone());
+            flat.push((
+                depth,
+                MenuItem {
+                    name,
+                    text: label,
+                    children: Vec::new(),
+                    click,
+                },
+            ));
+        }
+        fn build(flat: &[(usize, MenuItem)], start: &mut usize, depth: usize) -> Vec<MenuItem> {
+            let mut out: Vec<MenuItem> = Vec::new();
+            while *start < flat.len() {
+                let (d, item) = &flat[*start];
+                if *d < depth {
+                    break;
+                }
+                if *d > depth
+                    && let Some(last) = out.last_mut()
+                {
+                    last.children = build(flat, start, depth + 1);
+                    continue;
+                }
+                out.push(item.clone());
+                *start += 1;
+            }
+            out
+        }
+        let mut i = 0;
+        build(&flat, &mut i, 0)
+    }
 }
 
 /// Erreur de lecture ou d'écriture d'un formulaire.
@@ -222,6 +348,7 @@ impl FormDocument {
             height: 320.0,
             events: BTreeMap::new(),
             controls: Vec::new(),
+            menu: Vec::new(),
         }
     }
 
@@ -336,7 +463,30 @@ impl FormDocument {
                 v.push((h.clone(), Some(c.name.clone()), *e));
             }
         }
+        let mut items = Vec::new();
+        MenuItem::walk(&self.menu, &mut items);
+        for m in items {
+            if let Some(h) = &m.click {
+                v.push((h.clone(), Some(m.name.clone()), EventKind::Click));
+            }
+        }
         v
+    }
+
+    /// Élément de menu portant ce nom.
+    pub fn menu_item_mut(&mut self, name: &str) -> Option<&mut MenuItem> {
+        fn find<'a>(items: &'a mut [MenuItem], name: &str) -> Option<&'a mut MenuItem> {
+            for i in items {
+                if i.name == name {
+                    return Some(i);
+                }
+                if let Some(f) = find(&mut i.children, name) {
+                    return Some(f);
+                }
+            }
+            None
+        }
+        find(&mut self.menu, name)
     }
 
     /// Problèmes qui empêcheraient la génération de code.
@@ -352,6 +502,16 @@ impl FormDocument {
             }
             if !seen.insert(c.name.as_str()) {
                 problems.push(format!("nom de contrôle en double : {}", c.name));
+            }
+        }
+        let mut items = Vec::new();
+        MenuItem::walk(&self.menu, &mut items);
+        for m in items {
+            if !vrs_core::ident::is_snake_case_ident(&m.name) {
+                problems.push(format!("nom d'élément de menu invalide : {}", m.name));
+            }
+            if !seen.insert(m.name.as_str()) {
+                problems.push(format!("nom en double : {}", m.name));
             }
         }
         let mut handlers = std::collections::BTreeSet::new();
@@ -423,6 +583,28 @@ mod tests {
         let loaded = FormDocument::load(&path).unwrap();
         assert_eq!(f, loaded);
         assert!(loaded.validate().is_empty());
+    }
+
+    #[test]
+    fn menu_outline_roundtrip() {
+        let text = "Fichier\n  Ouvrir\n  Quitter\nAide\n  À propos\n";
+        let mut m = MenuItem::from_outline(text, &[], &[]);
+        assert_eq!(m.len(), 2);
+        assert_eq!(m[0].children[1].name, "menu_quitter");
+        assert_eq!(m[1].children[0].name, "menu_a_propos");
+        assert_eq!(MenuItem::to_outline(&m), text);
+        m[0].children[0].click = Some("menu_ouvrir_click".into());
+        // Ajout d'un élément : les noms et gestionnaires existants sont conservés.
+        let again = MenuItem::from_outline(
+            "Fichier\n  Ouvrir\n  Enregistrer\n  Quitter\nAide\n",
+            &m,
+            &[],
+        );
+        assert_eq!(
+            again[0].children[0].click.as_deref(),
+            Some("menu_ouvrir_click")
+        );
+        assert_eq!(again[0].children[1].name, "menu_enregistrer");
     }
 
     #[test]

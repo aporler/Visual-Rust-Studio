@@ -101,3 +101,8 @@ component-picturebox = Image (PictureBox)
 component-picturebox-desc = Affiche une image des ressources du projet.
 prop-image = Image
 prop-image-import = Importer une image dans les ressources du projet…
+prop-menu = Barre de menus (MenuStrip)
+prop-menu-placeholder = Fichier
+    Ouvrir
+    Quitter
+prop-menu-hint = Un élément par ligne ; indentez de deux espaces pour un sous-menu. Les éléments sans sous-menu ont un événement Click.

@@ -58,7 +58,8 @@
   warning on generated files.
 - **Components**: Button, Label, TextBox, CheckBox, RadioButton (exclusive
   groups), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
-  PictureBox (images copied to `resources/` and embedded in the program), with their
+  PictureBox (images copied to `resources/` and embedded in the program),
+  menu bar (MenuStrip, edited as an outline, Click event per item), with their
   own properties (Checked, Items, Selected, Value, Minimum, Maximum, Group) and
   events (Click, TextChanged, CheckedChanged, SelectionChanged, ValueChanged).
   `app.message_box("…")` shows a modal message (MsgBox). Every control has
@@ -160,7 +161,9 @@
   générés.
 - **Composants** : Button, Label, TextBox, CheckBox, RadioButton (groupes
   exclusifs), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
-  PictureBox (images copiées dans `resources/` et intégrées au programme), avec
+  PictureBox (images copiées dans `resources/` et intégrées au programme),
+  barre de menus (MenuStrip, éditée sous forme de plan, événement Click par
+  élément), avec
   leurs propriétés (Checked, Items, Selected, Value, Minimum, Maximum, Group)
   et événements (Click, TextChanged, CheckedChanged, SelectionChanged,
   ValueChanged). `app.message_box("…")` affiche un message modal (MsgBox).

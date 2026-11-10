@@ -2,7 +2,7 @@
 
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
-use vrs_components::{ComponentKind, Control, EventKind, Feature, FormDocument};
+use vrs_components::{ComponentKind, Control, EventKind, Feature, FormDocument, MenuItem};
 
 fn ident(s: &str) -> Ident {
     Ident::new(s, Span::call_site())
@@ -111,6 +111,15 @@ fn event_condition(event: EventKind) -> Option<TokenStream> {
     }
 }
 
+fn menu_init(items: &[MenuItem]) -> TokenStream {
+    let entries = items.iter().map(|i| {
+        let (name, text) = (&i.name, &i.text);
+        let children = menu_init(&i.children);
+        quote!(vrs::MenuItemState::new(#name, #text, #children))
+    });
+    quote!(vec![#(#entries),*])
+}
+
 /// La fenêtre affiche-t-elle des images (PictureBox avec image) ?
 pub fn uses_images(form: &FormDocument) -> bool {
     form.controls
@@ -137,6 +146,40 @@ pub fn generate_designer(form: &FormDocument) -> String {
         let name = ident(&c.name);
         let init = state_init(c);
         quote!(#name: #init)
+    });
+    let has_menu = !form.menu.is_empty();
+    let menu_field = has_menu.then(|| {
+        quote! {
+            /// Barre de menus (MenuStrip).
+            pub menu: Vec<vrs::MenuItemState>,
+        }
+    });
+    let menu_value = menu_init(&form.menu);
+    let menu_init_field = has_menu.then(|| quote!(menu: #menu_value,));
+    let mut menu_items = Vec::new();
+    MenuItem::walk(&form.menu, &mut menu_items);
+    let menu_arms: Vec<TokenStream> = menu_items
+        .iter()
+        .filter_map(|m| {
+            let h = ident(m.click.as_ref()?);
+            let name = &m.name;
+            Some(quote!(Some(#name) => self.#h(app),))
+        })
+        .collect();
+    let menu_draw = has_menu.then(|| {
+        if menu_arms.is_empty() {
+            quote!(let _ = vrs::menu_bar(ui, &self.menu);)
+        } else {
+            quote!(let menu_clicked = vrs::menu_bar(ui, &self.menu);)
+        }
+    });
+    let menu_dispatch = (!menu_arms.is_empty()).then(|| {
+        quote! {
+            match menu_clicked.as_deref() {
+                #(#menu_arms)*
+                _ => {}
+            }
+        }
     });
 
     let mut uses_app = false;
@@ -193,13 +236,13 @@ pub fn generate_designer(form: &FormDocument) -> String {
             }
         }
     }
-    let app_param = if uses_app {
+    let app_param = if uses_app || !menu_arms.is_empty() {
         ident("app")
     } else {
         ident("_app")
     };
     let layout_call = (!form.controls.is_empty()).then(|| quote!(vrs::layout(ui, [#w, #h]);));
-    let ui_param = if form.controls.is_empty() {
+    let ui_param = if form.controls.is_empty() && form.menu.is_empty() {
         ident("_ui")
     } else {
         ident("ui")
@@ -250,12 +293,14 @@ pub fn generate_designer(form: &FormDocument) -> String {
         #[doc = #struct_doc]
         pub struct #form_ty {
             #(#fields,)*
+            #menu_field
         }
 
         impl Default for #form_ty {
             fn default() -> Self {
                 Self {
                     #(#inits,)*
+                    #menu_init_field
                 }
             }
         }
@@ -272,9 +317,11 @@ pub fn generate_designer(form: &FormDocument) -> String {
             #[doc = #show_doc]
             fn show(&mut self, #ui_param: &mut egui::Ui, #app_param: &mut AppContext) {
                 #layout_call
+                #menu_draw
                 #(#draws)*
                 #(#exclusive)*
                 #(#dispatch)*
+                #menu_dispatch
             }
 
             #load_fn
@@ -403,6 +450,19 @@ mod tests {
         assert!(src.contains("vrs::progress_bar(ui, \"progress_bar1\", &self.progress_bar1)"));
         // Le cadre est dessiné en premier.
         assert!(src.find("vrs::group_box").unwrap() < src.find("vrs::radio_button").unwrap());
+    }
+
+    #[test]
+    fn menu_bar_generation() {
+        let mut f = FormDocument::new("Form1");
+        f.menu = MenuItem::from_outline("Fichier\n  Quitter\n", &[], &[]);
+        f.menu[0].children[0].click = Some("menu_quitter_click".into());
+        let src = generate_designer(&f);
+        syn::parse_file(&src).unwrap();
+        assert!(src.contains("pub menu: Vec<vrs::MenuItemState>"));
+        assert!(src.contains("vrs::MenuItemState::new(\"menu_quitter\", \"Quitter\", vec![])"));
+        assert!(src.contains("let menu_clicked = vrs::menu_bar(ui, &self.menu);"));
+        assert!(src.contains("Some(\"menu_quitter\") => self.menu_quitter_click(app),"));
     }
 
     #[test]

@@ -97,12 +97,97 @@ pub fn layout(ui: &mut egui::Ui, design_size: [f32; 2]) {
     ui.data_mut(|d| d.insert_temp(key, design_size));
 }
 
+/// Hauteur de la barre de menus.
+pub const MENU_HEIGHT: f32 = 24.0;
+
+/// Élément de la barre de menus (MenuStrip). Les éléments sans enfants
+/// déclenchent l'événement Click.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MenuItemState {
+    /// Nom de l'élément (`menu_ouvrir`), retourné par [`menu_bar`] au clic.
+    pub name: String,
+    pub text: String,
+    pub enabled: bool,
+    pub visible: bool,
+    pub children: Vec<MenuItemState>,
+}
+
+impl MenuItemState {
+    pub fn new(name: &str, text: &str, children: Vec<MenuItemState>) -> Self {
+        Self {
+            name: name.to_owned(),
+            text: text.to_owned(),
+            enabled: true,
+            visible: true,
+            children,
+        }
+    }
+}
+
+/// Trouve un élément de menu par son nom (pour le modifier :
+/// `vrs::menu_item(&mut self.menu, "menu_quitter").unwrap().enabled = false;`).
+pub fn menu_item<'a>(items: &'a mut [MenuItemState], name: &str) -> Option<&'a mut MenuItemState> {
+    for i in items {
+        if i.name == name {
+            return Some(i);
+        }
+        if let Some(found) = menu_item(&mut i.children, name) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+/// Dessine la barre de menus en haut de la fenêtre ; les contrôles sont placés
+/// en dessous. Retourne le nom de l'élément cliqué.
+pub fn menu_bar(ui: &mut egui::Ui, items: &[MenuItemState]) -> Option<String> {
+    let area = ui.max_rect();
+    let key = ui.scope_id().with("vrs-menu-height");
+    ui.data_mut(|d| d.insert_temp(key, MENU_HEIGHT));
+    let rect = egui::Rect::from_min_size(area.min, egui::vec2(area.width(), MENU_HEIGHT));
+    let mut clicked = None;
+    fn entries(ui: &mut egui::Ui, items: &[MenuItemState], clicked: &mut Option<String>) {
+        for i in items.iter().filter(|i| i.visible) {
+            if i.children.is_empty() {
+                if ui
+                    .add_enabled(i.enabled, egui::Button::new(i.text.as_str()))
+                    .clicked()
+                {
+                    *clicked = Some(i.name.clone());
+                    ui.close();
+                }
+            } else {
+                ui.add_enabled_ui(i.enabled, |ui| {
+                    ui.menu_button(i.text.as_str(), |ui| entries(ui, &i.children, clicked));
+                });
+            }
+        }
+    }
+    ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
+        egui::Frame::NONE
+            .fill(ui.visuals().faint_bg_color)
+            .inner_margin(egui::Margin::symmetric(4, 2))
+            .show(ui, |ui| {
+                ui.set_min_size(rect.size() - egui::vec2(8.0, 4.0));
+                egui::MenuBar::new().ui(ui, |ui| entries(ui, items, &mut clicked));
+            });
+    });
+    clicked
+}
+
 /// Rectangle à l'écran d'un contrôle, en tenant compte de son ancrage.
 fn anchored_rect(ui: &egui::Ui, bounds: Bounds, anchor: Anchor) -> egui::Rect {
-    let area = ui.max_rect();
+    let mut area = ui.max_rect();
+    // Sous la barre de menus, s'il y en a une.
+    let menu = ui.data(|d| d.get_temp::<f32>(ui.scope_id().with("vrs-menu-height")));
+    if let Some(h) = menu {
+        area.min.y += h;
+    }
     let key = ui.scope_id().with("vrs-design-size");
     let design = ui.data(|d| d.get_temp::<[f32; 2]>(key));
-    let (dx, dy) = design.map_or((0.0, 0.0), |d| (area.width() - d[0], area.height() - d[1]));
+    // La taille de conception inclut la barre de menus.
+    let full = ui.max_rect();
+    let (dx, dy) = design.map_or((0.0, 0.0), |d| (full.width() - d[0], full.height() - d[1]));
     let mut b = bounds;
     match (anchor.left, anchor.right) {
         (true, true) => b.width = (b.width + dx).max(1.0),
@@ -1743,6 +1828,62 @@ mod tests {
                 assert_eq!(fixed.min - origin, egui::vec2(10.0, 10.0));
             });
         harness.run();
+    }
+
+    #[test]
+    fn menu_bar_click_and_offset() {
+        struct WithMenu {
+            menu: Vec<MenuItemState>,
+            clicked: Option<String>,
+            button1: ButtonState,
+        }
+        impl Form for WithMenu {
+            fn title(&self) -> String {
+                "Menu".into()
+            }
+            fn size(&self) -> [f32; 2] {
+                [400.0, 200.0]
+            }
+            fn show(&mut self, ui: &mut egui::Ui, _app: &mut AppContext) {
+                layout(ui, [400.0, 200.0]);
+                let menu = menu_bar(ui, &self.menu);
+                let b = button(ui, "button1", &self.button1);
+                assert!(b.rect.min.y - ui.max_rect().min.y >= MENU_HEIGHT);
+                if menu.is_some() {
+                    self.clicked = menu;
+                }
+            }
+        }
+        let form = WithMenu {
+            menu: vec![MenuItemState::new(
+                "menu_fichier",
+                "Fichier",
+                vec![MenuItemState::new("menu_quitter", "Quitter", vec![])],
+            )],
+            clicked: None,
+            button1: ButtonState::new("OK", Bounds::new(0.0, 0.0, 80.0, 24.0)),
+        };
+        let mut h = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(400.0, 200.0))
+            .with_accessibility_check(false)
+            .build_ui_state(
+                |ui, r: &mut Runner| r.frame(ui),
+                Runner::new(Box::new(form), CloseStrategy::MainFormCloses),
+            );
+        h.run();
+        h.get_by_label("Fichier").click();
+        h.run();
+        h.get_by_label("Quitter").click();
+        h.run();
+        let ctx = h.ctx.clone();
+        let clicked = h
+            .state_mut()
+            .with_form(&ctx, FormId(1), |f, _| {
+                let any: &mut dyn Any = f;
+                any.downcast_mut::<WithMenu>().unwrap().clicked.clone()
+            })
+            .unwrap();
+        assert_eq!(clicked.as_deref(), Some("menu_quitter"));
     }
 
     #[test]

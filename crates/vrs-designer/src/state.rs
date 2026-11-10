@@ -63,6 +63,8 @@ pub struct DesignerState {
     /// Tampon d'édition du nom (validé à la perte du focus).
     pub(crate) name_edit: Option<(String, String)>,
     pub(crate) preview_states: std::collections::HashMap<String, Control>,
+    /// Texte du menu en cours d'édition (une ligne par élément).
+    pub(crate) menu_text: Option<String>,
 }
 
 impl DesignerState {
@@ -90,6 +92,7 @@ impl DesignerState {
             drag: None,
             name_edit: None,
             preview_states: Default::default(),
+            menu_text: None,
         }
     }
 
@@ -242,7 +245,12 @@ impl DesignerState {
     /// C'est ce que fait un double-clic sur un contrôle.
     pub fn ensure_event(&mut self, req: &HandlerRequest) -> Option<String> {
         let module = self.doc.module_name();
+        let is_menu = req
+            .control
+            .as_ref()
+            .is_some_and(|n| self.doc.control(n).is_none());
         let existing = match &req.control {
+            Some(name) if is_menu => self.doc.menu_item_mut(name)?.click.clone(),
             Some(name) => self.doc.control(name)?.events.get(&req.event).cloned(),
             None => self.doc.events.get(&req.event).cloned(),
         };
@@ -262,6 +270,11 @@ impl DesignerState {
         let h = handler.clone();
         let req = req.clone();
         self.edit(move |d| match &req.control {
+            Some(name) if is_menu => {
+                if let Some(m) = d.menu_item_mut(name) {
+                    m.click = Some(h);
+                }
+            }
             Some(name) => {
                 if let Some(c) = d.control_mut(name) {
                     c.events.insert(req.event, h);
