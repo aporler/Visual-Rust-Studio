@@ -162,6 +162,7 @@ settings-editor = Éditeur de code
 settings-editor-font-size = Taille de police
 settings-tab-width = Largeur d'indentation
 settings-format-on-save = Mettre en forme avec rustfmt à l'enregistrement
+settings-check-on-save = Vérifier le code (cargo check) à l'enregistrement
 settings-toolchain = Chaîne d'outils Rust
 settings-cargo-path = Chemin de cargo
 settings-cargo-path-hint = Laisser vide pour la détection automatique.
@@ -195,6 +196,7 @@ status-project-opened = Projet ouvert : { $name }
 status-project-created = Projet créé : { $name }
 status-code-generated = Code généré ({ $count } fichier(s) mis à jour).
 status-language-changed = Langue modifiée.
+status-background-check = Vérification du code…
 status-release = Release
 status-debug-build = Debug
 

@@ -352,3 +352,113 @@ fn cargo_check_shows_diagnostic_with_explanation() {
     };
     assert!(e.diagnostics.iter().any(|x| x.message.contains("E0308")));
 }
+
+/// Aide au code : `clo` propose `app.exit()`, et `close();` reçoit une correction rapide.
+#[test]
+fn code_assistance_completion_and_quick_fix() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(app_in(dir.path(), "fr-CA"));
+    h.state_mut()
+        .create_project(ProjectKind::Gui, dir.path(), "Aide");
+    h.run();
+    {
+        let d = h.state_mut().active_designer().unwrap();
+        d.add_control(ComponentKind::Button, 16.0, 16.0);
+        d.add_control(ComponentKind::TextBox, 16.0, 56.0);
+    }
+    run_cmd(
+        &mut h,
+        Command::OpenHandler(HandlerRequest {
+            control: Some("button1".into()),
+            event: EventKind::Click,
+        }),
+    );
+
+    // 1. Autocomplétion : « clo » → app.exit();
+    let cursor = {
+        let app = h.state_mut();
+        let Some(Tab::Code(e)) = app.active_tab_mut() else {
+            panic!()
+        };
+        assert!(e.completion.is_form);
+        assert_eq!(e.completion.controls.len(), 2);
+        e.text = e
+            .text
+            .replace("// À FAIRE : écrivez votre code ici.", "clo");
+        let c = e.text.find("clo").unwrap() + 3;
+        let c = e.text[..c].chars().count();
+        e.set_cursor(c);
+        c
+    };
+    h.run();
+    {
+        let app = h.state_mut();
+        let Some(Tab::Code(e)) = app.active_tab_mut() else {
+            panic!()
+        };
+        e.trigger_completion();
+        let (_, items) = e.completion_items();
+        assert_eq!(items[0].insert, "app.exit();", "{items:#?}");
+    }
+    h.run();
+    // La liste est affichée, avec l'explication en français.
+    assert!(h.query_by_label_contains("close() → app.exit()").is_some());
+    assert!(h.query_by_label_contains("ferme l'application").is_some());
+    h.key_press(egui::Key::Enter);
+    h.run();
+    {
+        let app = h.state();
+        let Some(Tab::Code(e)) = app.active_tab() else {
+            panic!()
+        };
+        assert!(e.text.contains("        app.exit();\n"), "{}", e.text);
+        assert!(!e.completion_open());
+        let _ = cursor;
+    }
+
+    // 2. Correction rapide : « close(); » souligné, remplacé par app.exit().
+    {
+        let app = h.state_mut();
+        let Some(Tab::Code(e)) = app.active_tab_mut() else {
+            panic!()
+        };
+        e.text = e.text.replace(
+            "app.exit();",
+            "close();\n        TextBox1.text = String::new();",
+        );
+    }
+    h.run();
+    let fixes = {
+        let app = h.state_mut();
+        let i18n = vrs_i18n::I18n::with_embedded("fr-CA");
+        let Some(Tab::Code(e)) = app.active_tab_mut() else {
+            panic!()
+        };
+        e.hint_diagnostics(&i18n)
+    };
+    assert_eq!(fixes.len(), 2);
+    assert!(fixes[0].message.contains("app.exit()"));
+    {
+        let app = h.state_mut();
+        let Some(Tab::Code(e)) = app.active_tab_mut() else {
+            panic!()
+        };
+        for f in fixes.iter().rev() {
+            e.apply_fix(f);
+        }
+        assert!(e.text.contains("app.exit();"));
+        assert!(e.text.contains("self.text_box1.text = String::new();"));
+    }
+    h.run();
+    // Le code corrigé est du Rust valide.
+    let app = h.state();
+    let Some(Tab::Code(e)) = app.active_tab() else {
+        panic!()
+    };
+    syn_check(&e.text);
+}
+
+fn syn_check(src: &str) {
+    assert!(src.contains("impl Form1"), "{src}");
+    assert_eq!(src.matches('{').count(), src.matches('}').count(), "{src}");
+}

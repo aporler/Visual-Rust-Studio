@@ -80,6 +80,10 @@ pub struct VrsApp {
     pub tabs: Vec<Tab>,
     pub active: usize,
     pub build: Option<BuildHandle>,
+    /// La commande en cours est une vérification automatique (silencieuse).
+    pub build_quiet: bool,
+    /// Diagnostics reçus pendant une vérification automatique.
+    pub pending_diagnostics: Vec<Diagnostic>,
     pub console: Vec<ConsoleLine>,
     pub diagnostics: Vec<Diagnostic>,
     pub selected_diagnostic: Option<usize>,
@@ -135,6 +139,8 @@ impl VrsApp {
             tabs: vec![Tab::Start],
             active: 0,
             build: None,
+            build_quiet: false,
+            pending_diagnostics: Vec::new(),
             console: Vec::new(),
             diagnostics: Vec::new(),
             selected_diagnostic: None,

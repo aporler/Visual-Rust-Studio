@@ -241,6 +241,10 @@ fn settings(app: &mut VrsApp, ctx: &egui::Context) {
                     &mut app.settings.format_on_save,
                     app.i18n.tr("settings-format-on-save"),
                 );
+                ui.checkbox(
+                    &mut app.settings.check_on_save,
+                    app.i18n.tr("settings-check-on-save"),
+                );
                 ui.separator();
 
                 // --- Concepteur ------------------------------------------------

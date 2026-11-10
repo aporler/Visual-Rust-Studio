@@ -43,7 +43,7 @@
 | 12 | Open and close Form2 | ⏳ **to do (phase 5)** | Form2 can be designed and builds, but the runtime cannot open it at run time yet. No placeholder method is exposed. |
 | 13 | Build with Cargo | ✅ | Build, Run, Check, Clippy, Tests, Clean, Stop, Release mode |
 | 14 | Run independently of VRS | ✅ | standalone Cargo project (copied runtime, only dependency: eframe) |
-| 15 | Rust diagnostics and explanations | ✅ partial | `cargo check` diagnostics (list, underline, tooltip, original message, documentation link, rustc suggestions); explanations for 17 error codes and 4 lints. **No live diagnostics yet (rust-analyzer).** |
+| 15 | Rust diagnostics and explanations | ✅ partial | `cargo check` diagnostics (list, underline, tooltip, original message, documentation link, rustc suggestions); explanations for 17 error codes and 4 lints; automatic check on save; compiler suggestions applicable as quick fixes. **No rust-analyzer yet.** |
 
 ### Other available features
 
@@ -54,6 +54,13 @@
 - **Editor**: Rust syntax highlighting, line numbers, auto-indent, tabs
   replaced by spaces, find/replace, go to line, rustfmt (command and on save),
   warning on generated files.
+- **Code assistance**: completion while typing or with Ctrl+Space (window
+  controls `self.text_box1`, their properties `.text`, `.visible`…, String
+  methods, `app.exit()`, `app.set_title()`, Rust keywords and snippets), with a
+  translated explanation of each item. VB.NET equivalents: `close` →
+  `app.exit()`, `Me` → `self`, `TextBox1` → `self.text_box1`, `Dim` → `let`,
+  `True` → `true`, `Nothing` → `None`, `Console.WriteLine` → `println!`.
+  These habits are underlined as you type, with a 💡 quick fix.
 - **Security**: confirmation before building a project not created by VRS;
   atomic writes; `.bak` copy before any insertion into user code; no change if
   that code does not parse.
@@ -64,9 +71,9 @@
 
 ### Known limitations
 
-- No rust-analyzer/LSP: no completion, go to definition, rename or applicable
-  Quick Fix (phase 6). rustc suggestions are shown but not applied
-  automatically yet.
+- No rust-analyzer/LSP yet: completion covers VRS controls and APIs, keywords
+  and snippets, but not arbitrary types or crates; no go to definition or
+  rename (phase 6).
 - No debugger (phase 7). The Debug menu says so.
 - Panels are resizable but not dockable (egui_dock is not compatible with
   egui 0.37).
@@ -115,7 +122,7 @@
 | 12 | Ouvrir et fermer Form2 | ⏳ **à faire (phase 5)** | Form2 se conçoit et compile, mais le runtime ne sait pas encore l'ouvrir à l'exécution. Aucune méthode fictive n'est exposée. |
 | 13 | Compiler avec Cargo | ✅ | Compiler, Exécuter, Vérifier, Clippy, Tests, Nettoyer, Arrêter, mode Release |
 | 14 | Exécuter indépendamment de VRS | ✅ | projet Cargo autonome (runtime copié, seule dépendance : eframe) |
-| 15 | Diagnostics Rust et explications | ✅ partiel | diagnostics de `cargo check` (liste, soulignement, infobulle, message original, lien vers la documentation, suggestions de rustc) ; explications pour 17 codes d'erreur et 4 lints. **Pas encore de diagnostics en direct (rust-analyzer).** |
+| 15 | Diagnostics Rust et explications | ✅ partiel | diagnostics de `cargo check` (liste, soulignement, infobulle, message original, lien vers la documentation, suggestions de rustc) ; explications pour 17 codes d'erreur et 4 lints ; vérification automatique à l'enregistrement ; suggestions du compilateur applicables en correction rapide. **Pas encore de rust-analyzer.** |
 
 ### Autres fonctions disponibles
 
@@ -128,6 +135,14 @@
   tabulation remplacée par des espaces, rechercher/remplacer, aller à la ligne,
   rustfmt (commande et à l'enregistrement), avertissement sur les fichiers
   générés.
+- **Aide au code** : autocomplétion pendant la frappe ou avec Ctrl+Espace
+  (contrôles de la fenêtre `self.text_box1`, leurs propriétés `.text`,
+  `.visible`…, méthodes de String, `app.exit()`, `app.set_title()`, mots-clés
+  et extraits Rust), avec une explication traduite de chaque proposition.
+  Équivalences VB.NET : `close` → `app.exit()`, `Me` → `self`, `TextBox1` →
+  `self.text_box1`, `Dim` → `let`, `True` → `true`, `Nothing` → `None`,
+  `Console.WriteLine` → `println!`. Ces habitudes sont soulignées pendant la
+  frappe, avec une correction rapide 💡.
 - **Sécurité** : confirmation avant de compiler un projet qui n'a pas été créé
   par VRS ; écritures atomiques ; copie `.bak` avant toute insertion dans le
   code utilisateur ; aucune modification si ce code ne s'analyse pas.
@@ -139,10 +154,10 @@
 
 ### Limites connues
 
-- Pas de rust-analyzer/LSP : pas d'autocomplétion, ni de navigation vers les
-  définitions, ni de renommage, ni de Quick Fix applicable (phase 6). Les
-  suggestions de rustc sont affichées mais pas encore appliquées
-  automatiquement.
+- Pas encore de rust-analyzer/LSP : l'autocomplétion couvre les contrôles et
+  les API de VRS, les mots-clés et les extraits, mais pas les types et crates
+  quelconques ; pas de navigation vers les définitions ni de renommage
+  (phase 6).
 - Pas de débogueur (phase 7). Le menu Débogage l'indique clairement.
 - Panneaux redimensionnables mais non ancrables (egui_dock incompatible avec
   egui 0.37).

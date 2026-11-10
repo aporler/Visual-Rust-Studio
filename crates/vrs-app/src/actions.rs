@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use vrs_compiler::{BuildEvent, CargoCommand, Level, OutputStream};
 use vrs_designer::{DesignerState, HandlerRequest};
+use vrs_editor::assist::Fix;
 use vrs_editor::{CodeEditor, EditorDiagnostic, Severity};
 use vrs_project::{Project, ProjectKind};
 
@@ -361,6 +362,7 @@ impl VrsApp {
             None => match CodeEditor::open(path) {
                 Ok(mut e) => {
                     e.diagnostics = self.editor_diagnostics(path);
+                    e.completion = self.completion_context_for(path);
                     self.tabs.push(Tab::Code(Box::new(e)));
                     self.tabs.len() - 1
                 }
@@ -457,6 +459,12 @@ impl VrsApp {
                     self.sync_code();
                 }
                 self.refresh_tree();
+                if path
+                    .extension()
+                    .is_some_and(|e| e == "rs" || e == "vrsform")
+                {
+                    self.background_check();
+                }
             }
             Ok(None) => {}
             Err(e) => {
@@ -505,6 +513,7 @@ impl VrsApp {
                         e.reload_if_clean();
                     }
                 }
+                self.refresh_completion_contexts();
                 true
             }
             Err(e) => {
@@ -623,6 +632,37 @@ impl VrsApp {
         self.execute(req.then, ctx);
     }
 
+    /// Vérification automatique (`cargo check`) après un enregistrement : les
+    /// diagnostics s'affichent dans l'éditeur sans ouvrir la sortie.
+    pub fn background_check(&mut self) {
+        if !self.settings.check_on_save || self.is_building() {
+            return;
+        }
+        let Some(project) = &self.project else { return };
+        let root = project.root.clone();
+        if !self.is_trusted(&root) {
+            return;
+        }
+        let Some(cargo) = vrs_compiler::find_cargo(self.settings.build.cargo_path.as_deref())
+        else {
+            return;
+        };
+        let ctx = self.repaint_ctx.clone();
+        self.build_quiet = true;
+        self.pending_diagnostics.clear();
+        self.build = Some(vrs_compiler::spawn(
+            &cargo,
+            &root,
+            CargoCommand::Check,
+            self.settings.build.release,
+            move || {
+                if let Some(c) = &ctx {
+                    c.request_repaint();
+                }
+            },
+        ));
+    }
+
     fn run_cargo(&mut self, command: CargoCommand) {
         let Some(project) = &self.project else {
             let msg = self.i18n.tr("error-no-project");
@@ -630,6 +670,13 @@ impl VrsApp {
             return;
         };
         let root = project.root.clone();
+        if self.is_building() && self.build_quiet {
+            // Une vérification automatique est remplacée par la commande demandée.
+            if let Some(b) = self.build.take() {
+                b.kill();
+            }
+            self.build_quiet = false;
+        }
         if self.is_building() {
             let msg = self.i18n.tr("error-already-running");
             self.error(msg);
@@ -656,6 +703,7 @@ impl VrsApp {
             self.selected_diagnostic = None;
             self.apply_diagnostics_to_editors();
         }
+        self.build_quiet = false;
         self.console.clear();
         self.show_output = true;
         self.bottom_tab = BottomTab::Output;
@@ -680,6 +728,36 @@ impl VrsApp {
         };
         let events = build.poll();
         let mut diag_changed = false;
+        if self.build_quiet {
+            // Vérification automatique : seuls les diagnostics sont utilisés, et
+            // ils remplacent les précédents une fois la vérification terminée.
+            for ev in events {
+                match ev {
+                    BuildEvent::Started(_) => {
+                        self.status = self.i18n.tr("status-background-check");
+                    }
+                    BuildEvent::Diagnostic(d) => {
+                        if d.span.is_some() && !self.pending_diagnostics.contains(&d) {
+                            self.pending_diagnostics.push(*d);
+                        }
+                    }
+                    BuildEvent::Finished { killed, .. } => {
+                        self.build_quiet = false;
+                        if !killed {
+                            self.diagnostics = std::mem::take(&mut self.pending_diagnostics);
+                            self.selected_diagnostic = None;
+                            diag_changed = true;
+                        }
+                        self.status = self.i18n.tr("status-ready");
+                    }
+                    BuildEvent::Line(..) | BuildEvent::SpawnError(_) => {}
+                }
+            }
+            if diag_changed {
+                self.apply_diagnostics_to_editors();
+            }
+            return;
+        }
         for ev in events {
             match ev {
                 BuildEvent::Started(cmd) => {
@@ -751,6 +829,45 @@ impl VrsApp {
         }
     }
 
+    /// Contexte d'autocomplétion : contrôles de la fenêtre si `path` est le code
+    /// d'une fenêtre (`src/forms/<fenêtre>.rs`).
+    pub fn completion_context_for(&self, path: &Path) -> vrs_editor::assist::CompletionContext {
+        let mut ctx = vrs_editor::assist::CompletionContext::default();
+        let Some(project) = &self.project else {
+            return ctx;
+        };
+        for form in &project.file.forms {
+            if same_path(&vrs_codegen::form_paths(&project.root, form).user, path) {
+                ctx.is_form = true;
+                if let Ok(doc) = project.load_form(form) {
+                    ctx.controls = doc
+                        .controls
+                        .iter()
+                        .map(|c| (c.name.clone(), c.kind.type_name().to_owned()))
+                        .collect();
+                }
+            }
+        }
+        ctx
+    }
+
+    fn refresh_completion_contexts(&mut self) {
+        let updates: Vec<(usize, vrs_editor::assist::CompletionContext)> = self
+            .tabs
+            .iter()
+            .enumerate()
+            .filter_map(|(i, t)| match t {
+                Tab::Code(e) => Some((i, self.completion_context_for(&e.path))),
+                _ => None,
+            })
+            .collect();
+        for (i, c) in updates {
+            if let Some(Tab::Code(e)) = self.tabs.get_mut(i) {
+                e.completion = c;
+            }
+        }
+    }
+
     fn editor_diagnostics(&self, path: &Path) -> Vec<EditorDiagnostic> {
         self.diagnostics
             .iter()
@@ -771,6 +888,37 @@ impl VrsApp {
                 if let Some(label) = &s.label {
                     message = format!("{message}\n\n» {label}");
                 }
+                // Correction : suggestion du compilateur, sinon équivalence VB.NET
+                // pour un nom inconnu (ex. `close()` → `app.exit()`).
+                let fix = d
+                    .suggestions
+                    .iter()
+                    .find(|sg| same_path(&sg.span.file, path))
+                    .map(|sg| Fix {
+                        replacement: sg.replacement.clone(),
+                        label_key: "fix-apply-suggestion".into(),
+                        range: Some((
+                            sg.span.line_start,
+                            sg.span.column_start,
+                            sg.span.line_end,
+                            sg.span.column_end,
+                        )),
+                    });
+                if fix.is_none() && d.code.as_deref() == Some("E0425") {
+                    let tabs_ctx = self.tabs.iter().find_map(|t| match t {
+                        Tab::Code(e) if same_path(&e.path, path) => Some(e.completion.clone()),
+                        _ => None,
+                    });
+                    if let Some(ctx) = tabs_ctx
+                        && let Some(name) = d.message.split('`').nth(1)
+                        && let Some(lint) =
+                            vrs_editor::assist::lint_vb_habits(&format!("{name}()"), &ctx)
+                                .into_iter()
+                                .next()
+                    {
+                        message = format!("{message}\n\n💡 {}", self.i18n.tr(&lint.message_key));
+                    }
+                }
                 Some(EditorDiagnostic {
                     severity: match d.level {
                         Level::Error => Severity::Error,
@@ -782,6 +930,7 @@ impl VrsApp {
                     line_end: s.line_end,
                     column_end: s.column_end,
                     message,
+                    fix,
                 })
             })
             .collect()

@@ -1,20 +1,23 @@
 //! Éditeur de code Rust de Visual Rust Studio.
 //!
-//! Fonctions actuelles : coloration syntaxique (syntect), numéros de ligne,
-//! indentation automatique, recherche et remplacement, aller à une ligne,
-//! soulignement des diagnostics de `cargo check` avec infobulle, mise en forme
-//! par rustfmt.
+//! Fonctions : coloration syntaxique (syntect), numéros de ligne, indentation
+//! automatique, recherche et remplacement, aller à une ligne, autocomplétion
+//! (contrôles de la fenêtre, API `vrs`, mots-clés et extraits Rust),
+//! équivalences VB.NET, corrections rapides, soulignement des diagnostics de
+//! `cargo check` avec infobulle, mise en forme par rustfmt.
 //!
-//! L'autocomplétion, la navigation vers les définitions et le renommage
-//! viendront avec l'intégration de rust-analyzer (LSP), en phase 6.
+//! La navigation vers les définitions et le renommage viendront avec
+//! l'intégration de rust-analyzer (LSP).
 
+pub mod assist;
 mod text;
 
 use std::path::{Path, PathBuf};
 
+use assist::{CompletionContext, CompletionItem, Fix};
 use egui::text::{CCursor, CCursorRange};
-use egui::{Color32, FontId, Key, RichText, Stroke};
-use vrs_i18n::I18n;
+use egui::{Color32, FontId, Key, Modifiers, RichText, Stroke};
+use vrs_i18n::{FluentArgs, I18n};
 
 pub use text::{char_to_line_col, find_all, line_col_to_char, line_start_char};
 
@@ -35,6 +38,8 @@ pub struct EditorDiagnostic {
     pub line_end: usize,
     pub column_end: usize,
     pub message: String,
+    /// Correction rapide proposée.
+    pub fix: Option<Fix>,
 }
 
 /// Options d'affichage.
@@ -76,6 +81,16 @@ pub struct CodeEditor {
     replace_text: String,
     goto_line: Option<usize>,
     pending_selection: Option<(usize, usize)>,
+    /// Contexte d'autocomplétion (contrôles de la fenêtre).
+    pub completion: CompletionContext,
+    /// Liste de propositions ouverte : index sélectionné.
+    popup: Option<usize>,
+    last_cursor: Option<usize>,
+    lints: Vec<assist::Lint>,
+    lints_text_len: usize,
+    lints_dirty: bool,
+    /// Menu de correction rapide ouvert : (diagnostic, position à l'écran).
+    fix_menu: Option<(EditorDiagnostic, egui::Pos2)>,
 }
 
 impl CodeEditor {
@@ -100,7 +115,87 @@ impl CodeEditor {
             replace_text: String::new(),
             goto_line: None,
             pending_selection: None,
+            completion: CompletionContext::default(),
+            popup: None,
+            last_cursor: None,
+            lints: Vec::new(),
+            lints_text_len: usize::MAX,
+            lints_dirty: true,
+            fix_menu: None,
         }
+    }
+
+    /// Ouvre la liste de propositions à la position du curseur (Ctrl+Espace).
+    pub fn trigger_completion(&mut self) {
+        self.popup = Some(0);
+    }
+
+    /// Propositions actuelles (début du mot remplacé, éléments).
+    pub fn completion_items(&self) -> (usize, Vec<CompletionItem>) {
+        let cursor = self.last_cursor.unwrap_or(self.text.chars().count());
+        assist::complete(&self.text, cursor, &self.completion)
+    }
+
+    /// Accepte la proposition `index`.
+    pub fn accept_completion(&mut self, index: usize) {
+        let cursor = self.last_cursor.unwrap_or(self.text.chars().count());
+        let (start, items) = assist::complete(&self.text, cursor, &self.completion);
+        if let Some(item) = items.get(index) {
+            let c = assist::apply_completion(&mut self.text, start, cursor, &item.insert);
+            self.pending_selection = Some((c, c));
+            self.last_cursor = Some(c);
+            self.lints_dirty = true;
+        }
+        self.popup = None;
+    }
+
+    /// La liste de propositions est-elle ouverte ?
+    pub fn completion_open(&self) -> bool {
+        self.popup.is_some()
+    }
+
+    /// Place le curseur (index de caractère), comme si l'utilisateur avait cliqué.
+    pub fn set_cursor(&mut self, index: usize) {
+        self.last_cursor = Some(index);
+        self.pending_selection = Some((index, index));
+    }
+
+    /// Habitudes VB.NET repérées dans le texte, sous forme de diagnostics avec correction.
+    pub fn hint_diagnostics(&mut self, i18n: &I18n) -> Vec<EditorDiagnostic> {
+        if self.lints_dirty || self.lints_text_len != self.text.len() {
+            self.lints = assist::lint_vb_habits(&self.text, &self.completion);
+            self.lints_text_len = self.text.len();
+            self.lints_dirty = false;
+        }
+        self.lints
+            .iter()
+            .map(|l| EditorDiagnostic {
+                severity: Severity::Info,
+                line_start: l.line,
+                column_start: l.col_start,
+                line_end: l.line,
+                column_end: l.col_end,
+                message: i18n.trf(&l.message_key, &[("vb", l.fix.replacement.clone().into())]),
+                fix: Some(l.fix.clone()),
+            })
+            .collect()
+    }
+
+    /// Applique la correction d'un diagnostic.
+    pub fn apply_fix(&mut self, d: &EditorDiagnostic) {
+        let Some(fix) = &d.fix else { return };
+        let (l0, c0, l1, c1) =
+            fix.range
+                .unwrap_or((d.line_start, d.column_start, d.line_end, d.column_end));
+        let a = line_col_to_char(&self.text, l0, c0);
+        let b = line_col_to_char(&self.text, l1, c1).max(a);
+        text::replace_chars(&mut self.text, a, b, &fix.replacement);
+        let c = a + fix.replacement.chars().count();
+        self.pending_selection = Some((c, c));
+        self.lints_dirty = true;
+        // Le diagnostic du compilateur ne correspond plus au texte.
+        self.diagnostics
+            .retain(|x| !(x.line_start == d.line_start && x.column_start == d.column_start));
     }
 
     /// Nom du fichier.
@@ -202,13 +297,37 @@ impl CodeEditor {
         };
 
         let id = self.id();
+        let has_focus = ui.memory(|m| m.has_focus(id));
+        if has_focus && ui.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::Space)) {
+            self.popup = Some(0);
+        }
+        if let (true, Some(sel)) = (has_focus, self.popup) {
+            let n = self.completion_items().1.len();
+            if n == 0 {
+                self.popup = None;
+            } else if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::ArrowDown)) {
+                self.popup = Some((sel + 1) % n);
+            } else if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::ArrowUp)) {
+                self.popup = Some((sel + n - 1) % n);
+            } else if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+                self.popup = None;
+            } else if ui.input_mut(|i| {
+                i.consume_key(Modifiers::NONE, Key::Enter)
+                    || i.consume_key(Modifiers::NONE, Key::Tab)
+            }) {
+                self.accept_completion(sel.min(n - 1));
+                out.changed = true;
+            }
+        }
+        let mut underlines = self.diagnostics.clone();
+        underlines.extend(self.hint_diagnostics(i18n));
         let line_count = self.text.split('\n').count().max(1);
         let digits = line_count.to_string().len().max(3);
-        let diag_lines: Vec<(usize, Severity)> = self
-            .diagnostics
+        let diag_lines: Vec<(usize, Severity)> = underlines
             .iter()
             .map(|d| (d.line_start, d.severity))
             .collect();
+        let mut fix_request: Option<(EditorDiagnostic, egui::Pos2)> = None;
 
         egui::ScrollArea::both()
             .id_salt(("editor-scroll", &self.path))
@@ -258,6 +377,30 @@ impl CodeEditor {
                         out.changed = true;
                         post_edit(ui, &mut self.text, &mut output, opts.tab_width);
                     }
+                    let cursor_now = output.cursor_range.map(|r| r.primary.index.0);
+                    if output.response.changed() {
+                        // Ouvre les propositions après un caractère d'identifiant ou un point.
+                        let typed = cursor_now
+                            .and_then(|c| c.checked_sub(1))
+                            .and_then(|c| self.text.chars().nth(c));
+                        match typed {
+                            Some(ch) if ch.is_alphanumeric() || ch == '_' || ch == '.' => {
+                                if self.popup.is_none() {
+                                    self.popup = Some(0);
+                                }
+                            }
+                            _ => self.popup = None,
+                        }
+                    } else if cursor_now != self.last_cursor
+                        && self.popup.is_some()
+                        && cursor_now.is_some()
+                    {
+                        // Le curseur a bougé (clic, flèches) : fermer.
+                        self.popup = None;
+                    }
+                    if cursor_now.is_some() {
+                        self.last_cursor = cursor_now;
+                    }
 
                     // Navigation demandée (aller à la ligne, résultat de recherche).
                     let mut select = self.pending_selection.take();
@@ -276,7 +419,7 @@ impl CodeEditor {
                     }
 
                     // Soulignement des diagnostics.
-                    for d in &self.diagnostics {
+                    for d in &underlines {
                         let a = line_col_to_char(&self.text, d.line_start, d.column_start);
                         let mut b = line_col_to_char(&self.text, d.line_end, d.column_end);
                         if b <= a {
@@ -297,9 +440,72 @@ impl CodeEditor {
                             egui::pos2(x0 + offset.x, ra.min.y + offset.y),
                             egui::pos2(x1 + offset.x, y + 2.0),
                         );
-                        let rid = id.with(("diag", d.line_start, d.column_start));
-                        ui.interact(hover, rid, egui::Sense::hover())
-                            .on_hover_text(&d.message);
+                        let rid = id.with(("diag", d.line_start, d.column_start, d.column_end));
+                        let sense = if d.fix.is_some() {
+                            egui::Sense::click()
+                        } else {
+                            egui::Sense::hover()
+                        };
+                        let mut tip = d.message.clone();
+                        if d.fix.is_some() {
+                            tip.push_str(&format!("\n\n💡 {}", i18n.tr("editor-quick-fix-hint")));
+                        }
+                        let r = ui.interact(hover, rid, sense).on_hover_text(tip);
+                        if r.clicked() {
+                            fix_request = Some((d.clone(), hover.left_bottom()));
+                        }
+                    }
+
+                    // Ampoule dans la gouttière pour les lignes qui ont une correction.
+                    for d in underlines.iter().filter(|d| d.fix.is_some()) {
+                        let y = gutter_rect.top() + 2.0 + (d.line_start as f32 - 1.0) * row_h;
+                        let r = egui::Rect::from_min_size(
+                            egui::pos2(gutter_rect.right() - row_h, y),
+                            egui::vec2(row_h, row_h),
+                        );
+                        let resp = ui
+                            .interact(
+                                r,
+                                id.with(("bulb", d.line_start, d.column_start)),
+                                egui::Sense::click(),
+                            )
+                            .on_hover_text(i18n.tr("editor-quick-fix"));
+                        ui.painter().text(
+                            r.center(),
+                            egui::Align2::CENTER_CENTER,
+                            "💡",
+                            FontId::proportional(row_h * 0.8),
+                            ui.visuals().warn_fg_color,
+                        );
+                        if resp.clicked() {
+                            fix_request = Some((d.clone(), r.right_bottom()));
+                        }
+                    }
+
+                    // Liste de propositions sous le curseur.
+                    if let (Some(sel), Some(c), true) = (
+                        self.popup,
+                        cursor_now.or(self.last_cursor),
+                        has_focus || output.response.has_focus(),
+                    ) {
+                        let (_, items) = assist::complete(&self.text, c, &self.completion);
+                        if items.is_empty() {
+                            self.popup = None;
+                        } else {
+                            let pos = output.galley.pos_from_cursor(CCursor::new(c));
+                            let anchor = output.galley_pos + pos.left_bottom().to_vec2();
+                            if let Some(i) = completion_popup(
+                                ui,
+                                i18n,
+                                id,
+                                anchor,
+                                &items,
+                                sel.min(items.len() - 1),
+                            ) {
+                                self.accept_completion(i);
+                                out.changed = true;
+                            }
+                        }
                     }
 
                     if let Some(range) = output.cursor_range {
@@ -307,6 +513,43 @@ impl CodeEditor {
                     }
                 });
             });
+
+        let just_opened = fix_request.is_some();
+        if just_opened {
+            self.fix_menu = fix_request;
+        }
+        if let Some((d, pos)) = self.fix_menu.clone() {
+            let mut close = false;
+            let area = egui::Area::new(id.with("fix-menu"))
+                .order(egui::Order::Foreground)
+                .fixed_pos(pos)
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::popup(ui.style()).show(ui, |ui| {
+                        if let Some(fix) = &d.fix {
+                            let label = i18n.trf(
+                                &fix.label_key,
+                                &[("replacement", fix.replacement.clone().into())],
+                            );
+                            if ui.button(format!("💡 {label}")).clicked() {
+                                self.apply_fix(&d);
+                                out.changed = true;
+                                close = true;
+                            }
+                        }
+                    });
+                });
+            if close
+                || ui.input(|i| i.key_pressed(Key::Escape))
+                || (ui.input(|i| i.pointer.any_click())
+                    && !area.response.contains_pointer()
+                    && !just_opened)
+            {
+                self.fix_menu = None;
+            }
+        }
+        if out.changed {
+            self.lints_dirty = true;
+        }
         out
     }
 
@@ -385,6 +628,53 @@ impl CodeEditor {
             }
         });
     }
+}
+
+/// Affiche la liste de propositions. Retourne l'index cliqué.
+fn completion_popup(
+    ui: &egui::Ui,
+    i18n: &I18n,
+    id: egui::Id,
+    anchor: egui::Pos2,
+    items: &[CompletionItem],
+    selected: usize,
+) -> Option<usize> {
+    let mut clicked = None;
+    egui::Area::new(id.with("completion"))
+        .order(egui::Order::Foreground)
+        .fixed_pos(anchor + egui::vec2(0.0, 2.0))
+        .show(ui.ctx(), |ui| {
+            egui::Frame::popup(ui.style()).show(ui, |ui| {
+                ui.set_min_width(260.0);
+                egui::ScrollArea::vertical()
+                    .max_height(220.0)
+                    .show(ui, |ui| {
+                        for (i, item) in items.iter().enumerate() {
+                            let text =
+                                RichText::new(format!("{}  {}", item.kind.icon(), item.label))
+                                    .monospace();
+                            let r = ui.selectable_label(i == selected, text);
+                            if i == selected {
+                                r.scroll_to_me(None);
+                            }
+                            if r.clicked() {
+                                clicked = Some(i);
+                            }
+                        }
+                    });
+                if let Some(item) = items.get(selected) {
+                    ui.separator();
+                    let mut args = FluentArgs::new();
+                    for (k, v) in &item.doc_args {
+                        args.set(k.as_str(), v.clone());
+                    }
+                    ui.set_max_width(360.0);
+                    ui.label(RichText::new(i18n.tr_args(&item.doc_key, &args)).small());
+                    ui.weak(RichText::new(i18n.tr("editor-completion-keys")).small());
+                }
+            });
+        });
+    clicked
 }
 
 /// Ajustements après une saisie : tabulation → espaces, indentation automatique.
@@ -542,6 +832,7 @@ mod tests {
             line_end: 2,
             column_end: 21,
             message: "types incompatibles".into(),
+            fix: None,
         });
         e.open_find();
         e.go_to_line(2);

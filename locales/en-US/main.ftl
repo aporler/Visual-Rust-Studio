@@ -163,6 +163,7 @@ settings-editor = Code Editor
 settings-editor-font-size = Font size
 settings-tab-width = Indentation width
 settings-format-on-save = Format with rustfmt on save
+settings-check-on-save = Check the code (cargo check) on save
 settings-toolchain = Rust Toolchain
 settings-cargo-path = Path to cargo
 settings-cargo-path-hint = Leave empty for automatic detection.
@@ -194,6 +195,7 @@ status-project-opened = Project opened: { $name }
 status-project-created = Project created: { $name }
 status-code-generated = Code generated ({ $count } files updated).
 status-language-changed = Language changed.
+status-background-check = Checking the code…
 status-release = Release
 status-debug-build = Debug
 

@@ -67,6 +67,8 @@ pub struct Settings {
     pub editor_font_size: f32,
     pub tab_width: usize,
     pub format_on_save: bool,
+    /// Lancer `cargo check` en arrière-plan à chaque enregistrement.
+    pub check_on_save: bool,
     pub designer: DesignerSettings,
     pub build: BuildSettings,
     /// Répertoire par défaut des nouveaux projets.
@@ -86,6 +88,7 @@ impl Default for Settings {
             editor_font_size: 14.0,
             tab_width: 4,
             format_on_save: true,
+            check_on_save: true,
             designer: DesignerSettings::default(),
             build: BuildSettings::default(),
             projects_dir: None,
