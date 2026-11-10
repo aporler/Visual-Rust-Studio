@@ -55,3 +55,34 @@ events-go-to = Aller au code
 
 event-closing = Closing (fermeture demandée)
 event-closed = Closed (fenêtre fermée)
+
+
+component-checkbox = Case à cocher
+component-radiobutton = Bouton d'option
+component-combobox = Liste déroulante
+component-listbox = Liste
+component-progressbar = Barre de progression
+component-slider = Curseur
+component-groupbox = Cadre (GroupBox)
+component-panel = Panneau
+component-checkbox-desc = Une case que l'utilisateur peut cocher ou décocher.
+component-radiobutton-desc = Une option : dans un groupe, une seule peut être cochée.
+component-combobox-desc = Une liste d'éléments qui se déroule.
+component-listbox-desc = Une liste d'éléments ; l'utilisateur en sélectionne un.
+component-progressbar-desc = Montre l'avancement d'une tâche.
+component-slider-desc = Choisit un nombre en déplaçant un curseur.
+component-groupbox-desc = Un cadre avec un titre, pour regrouper visuellement des contrôles.
+component-panel-desc = Une zone simple pour regrouper visuellement des contrôles.
+event-checked-changed = CheckedChanged (case cochée/décochée)
+event-selection-changed = SelectionChanged (sélection changée)
+event-value-changed = ValueChanged (valeur changée)
+prop-checked = Cochée (Checked)
+prop-group = Groupe
+prop-group-hint = Les boutons d'option d'un même groupe s'excluent mutuellement.
+prop-group-data = Données
+prop-items = Éléments (Items)
+prop-items-hint = Un élément par ligne.
+prop-selected = Élément sélectionné
+prop-minimum = Minimum
+prop-maximum = Maximum
+prop-value = Valeur (Value)

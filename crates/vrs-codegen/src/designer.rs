@@ -2,7 +2,7 @@
 
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
-use vrs_components::{ComponentKind, Control, EventKind, FormDocument};
+use vrs_components::{ComponentKind, Control, EventKind, Feature, FormDocument};
 
 fn ident(s: &str) -> Ident {
     Ident::new(s, Span::call_site())
@@ -33,6 +33,27 @@ fn state_init(c: &Control) -> TokenStream {
     );
     let visible = c.visible;
     let enabled = c.enabled;
+    let mut extra = Vec::new();
+    if c.kind.has(Feature::Checked) {
+        let checked = c.checked;
+        extra.push(quote!(checked: #checked,));
+    }
+    if c.kind.has(Feature::Group) {
+        let group = string_expr(&c.group);
+        extra.push(quote!(group: #group,));
+    }
+    if c.kind.has(Feature::Items) {
+        let items = c.items.iter().map(|i| quote!(String::from(#i)));
+        let selected = match c.selected.filter(|i| *i < c.items.len()) {
+            Some(i) => quote!(Some(#i)),
+            None => quote!(None),
+        };
+        extra.push(quote!(items: vec![#(#items),*], selected: #selected,));
+    }
+    if c.kind.has(Feature::Value) {
+        let (v, min, max) = (f32_lit(c.value), f32_lit(c.minimum), f32_lit(c.maximum));
+        extra.push(quote!(value: #v, minimum: #min, maximum: #max,));
+    }
     quote! {
         vrs::#ty {
             text: #text,
@@ -40,6 +61,7 @@ fn state_init(c: &Control) -> TokenStream {
             visible: #visible,
             enabled: #enabled,
             tooltip: #tooltip,
+            #(#extra)*
         }
     }
 }
@@ -47,7 +69,10 @@ fn state_init(c: &Control) -> TokenStream {
 fn event_condition(event: EventKind) -> Option<TokenStream> {
     match event {
         EventKind::Click => Some(quote!(clicked())),
-        EventKind::TextChanged => Some(quote!(changed())),
+        EventKind::TextChanged
+        | EventKind::CheckedChanged
+        | EventKind::SelectionChanged
+        | EventKind::ValueChanged => Some(quote!(changed())),
         EventKind::Load | EventKind::Closing | EventKind::Closed => None,
     }
 }
@@ -76,23 +101,47 @@ pub fn generate_designer(form: &FormDocument) -> String {
     let mut uses_app = false;
     let mut draws = Vec::new();
     let mut dispatch = Vec::new();
-    for c in &form.controls {
+    // Les cadres (GroupBox, Panel) sont dessinés en premier, derrière les autres.
+    let mut ordered: Vec<&Control> = form.controls.iter().collect();
+    ordered.sort_by_key(|c| !c.kind.is_container());
+    let mut exclusive = Vec::new();
+    for c in ordered {
         let name = ident(&c.name);
         let name_str = c.name.as_str();
         let render = ident(c.kind.render_fn());
-        let arg = match c.kind {
-            ComponentKind::TextBox => quote!(&mut self.#name),
-            ComponentKind::Button | ComponentKind::Label => quote!(&self.#name),
+        let arg = if c.kind.render_mut() {
+            quote!(&mut self.#name)
+        } else {
+            quote!(&self.#name)
         };
         let handlers: Vec<_> = c
             .events
             .iter()
             .filter_map(|(e, h)| event_condition(*e).map(|cond| (cond, ident(h))))
             .collect();
-        if handlers.is_empty() {
+        // Boutons d'option : cocher l'un décoche les autres du même groupe.
+        let others: Vec<Ident> = if c.kind == ComponentKind::RadioButton {
+            form.controls
+                .iter()
+                .filter(|o| {
+                    o.kind == ComponentKind::RadioButton && o.group == c.group && o.name != c.name
+                })
+                .map(|o| ident(&o.name))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        if !others.is_empty() {
+            exclusive.push(quote! {
+                if #name.changed() {
+                    #(self.#others.checked = false;)*
+                }
+            });
+        }
+        if handlers.is_empty() && others.is_empty() {
             draws.push(quote!(let _ = vrs::#render(ui, #name_str, #arg);));
         } else {
-            uses_app = true;
+            uses_app |= !handlers.is_empty();
             draws.push(quote!(let #name = vrs::#render(ui, #name_str, #arg);));
             for (cond, handler) in handlers {
                 dispatch.push(quote! {
@@ -174,6 +223,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
             #[doc = #show_doc]
             fn show(&mut self, #ui_param: &mut egui::Ui, #app_param: &mut AppContext) {
                 #(#draws)*
+                #(#exclusive)*
                 #(#dispatch)*
             }
 
@@ -274,6 +324,35 @@ mod tests {
         // Fenêtre vide : aucun paramètre inutilisé (pas d'avertissement).
         let empty = generate_designer(&FormDocument::new("Form3"));
         assert!(empty.contains("_ui: &mut egui::Ui, _app: &mut AppContext"));
+    }
+
+    #[test]
+    fn new_components_and_radio_groups() {
+        let mut f = FormDocument::new("Form1");
+        f.add_control(ComponentKind::GroupBox, 0.0, 0.0);
+        let r1 = f.add_control(ComponentKind::RadioButton, 8.0, 8.0);
+        f.add_control(ComponentKind::RadioButton, 8.0, 32.0);
+        let cb = f.add_control(ComponentKind::ComboBox, 8.0, 60.0);
+        f.add_control(ComponentKind::Slider, 8.0, 90.0);
+        f.add_control(ComponentKind::ProgressBar, 8.0, 120.0);
+        f.control_mut(&r1).unwrap().checked = true;
+        let c = f.control_mut(&cb).unwrap();
+        c.items = vec!["Un".into(), "Deux".into()];
+        c.selected = Some(1);
+        c.events.insert(
+            EventKind::SelectionChanged,
+            "combo_box1_selection_changed".into(),
+        );
+        let src = generate_designer(&f);
+        syn::parse_file(&src).unwrap();
+        assert!(src.contains("items: vec![String::from(\"Un\"), String::from(\"Deux\")]"));
+        assert!(src.contains("selected: Some(1usize)") || src.contains("selected: Some(1)"));
+        assert!(src.contains("self.radio_button2.checked = false;"));
+        assert!(src.contains("if combo_box1.changed()"));
+        assert!(src.contains("vrs::slider(ui, \"slider1\", &mut self.slider1)"));
+        assert!(src.contains("vrs::progress_bar(ui, \"progress_bar1\", &self.progress_bar1)"));
+        // Le cadre est dessiné en premier.
+        assert!(src.find("vrs::group_box").unwrap() < src.find("vrs::radio_button").unwrap());
     }
 
     #[test]

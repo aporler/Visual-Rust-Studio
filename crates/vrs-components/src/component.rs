@@ -3,19 +3,51 @@
 use serde::{Deserialize, Serialize};
 
 /// Type de composant disponible dans la boîte à outils.
-///
-/// Les premiers composants sont Button, Label et TextBox ; les autres
-/// (CheckBox, ComboBox, Panel…) viendront dans les phases suivantes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ComponentKind {
     Button,
     Label,
     TextBox,
+    CheckBox,
+    RadioButton,
+    ComboBox,
+    ListBox,
+    ProgressBar,
+    Slider,
+    GroupBox,
+    Panel,
+}
+
+/// Propriétés propres à certains composants (en plus de Name, Text, position…).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Feature {
+    /// `text` est affiché.
+    Text,
+    /// Case cochée (`checked`).
+    Checked,
+    /// Groupe d'options exclusives (`group`).
+    Group,
+    /// Liste d'éléments (`items`, `selected`).
+    Items,
+    /// Valeur numérique (`value`, `minimum`, `maximum`).
+    Value,
 }
 
 impl ComponentKind {
     /// Tous les composants, dans l'ordre de la boîte à outils.
-    pub const ALL: [ComponentKind; 3] = [Self::Button, Self::Label, Self::TextBox];
+    pub const ALL: [ComponentKind; 11] = [
+        Self::Button,
+        Self::Label,
+        Self::TextBox,
+        Self::CheckBox,
+        Self::RadioButton,
+        Self::ComboBox,
+        Self::ListBox,
+        Self::ProgressBar,
+        Self::Slider,
+        Self::GroupBox,
+        Self::Panel,
+    ];
 
     /// Nom du type (identique au nom anglais de Windows Forms).
     pub fn type_name(self) -> &'static str {
@@ -23,15 +55,31 @@ impl ComponentKind {
             Self::Button => "Button",
             Self::Label => "Label",
             Self::TextBox => "TextBox",
+            Self::CheckBox => "CheckBox",
+            Self::RadioButton => "RadioButton",
+            Self::ComboBox => "ComboBox",
+            Self::ListBox => "ListBox",
+            Self::ProgressBar => "ProgressBar",
+            Self::Slider => "Slider",
+            Self::GroupBox => "GroupBox",
+            Self::Panel => "Panel",
         }
     }
 
-    /// Préfixe des noms générés automatiquement (`button1`, `label1`, `text_box1`).
+    /// Préfixe des noms générés automatiquement (`button1`, `text_box1`…).
     pub fn name_prefix(self) -> &'static str {
         match self {
             Self::Button => "button",
             Self::Label => "label",
             Self::TextBox => "text_box",
+            Self::CheckBox => "check_box",
+            Self::RadioButton => "radio_button",
+            Self::ComboBox => "combo_box",
+            Self::ListBox => "list_box",
+            Self::ProgressBar => "progress_bar",
+            Self::Slider => "slider",
+            Self::GroupBox => "group_box",
+            Self::Panel => "panel",
         }
     }
 
@@ -41,34 +89,43 @@ impl ComponentKind {
             Self::Button => "ButtonState",
             Self::Label => "LabelState",
             Self::TextBox => "TextBoxState",
+            Self::CheckBox => "CheckBoxState",
+            Self::RadioButton => "RadioButtonState",
+            Self::ComboBox => "ComboBoxState",
+            Self::ListBox => "ListBoxState",
+            Self::ProgressBar => "ProgressBarState",
+            Self::Slider => "SliderState",
+            Self::GroupBox => "GroupBoxState",
+            Self::Panel => "PanelState",
         }
     }
 
     /// Fonction de rendu du runtime `vrs`.
     pub fn render_fn(self) -> &'static str {
-        match self {
-            Self::Button => "button",
-            Self::Label => "label",
-            Self::TextBox => "text_box",
-        }
+        self.name_prefix()
+    }
+
+    /// La fonction de rendu modifie-t-elle l'état (`&mut`) ?
+    pub fn render_mut(self) -> bool {
+        matches!(
+            self,
+            Self::TextBox
+                | Self::CheckBox
+                | Self::RadioButton
+                | Self::ComboBox
+                | Self::ListBox
+                | Self::Slider
+        )
     }
 
     /// Clé de traduction du nom affiché.
-    pub fn i18n_key(self) -> &'static str {
-        match self {
-            Self::Button => "component-button",
-            Self::Label => "component-label",
-            Self::TextBox => "component-textbox",
-        }
+    pub fn i18n_key(self) -> String {
+        format!("component-{}", self.name_prefix().replace('_', ""))
     }
 
     /// Clé de traduction de la description (infobulle de la boîte à outils).
-    pub fn i18n_desc_key(self) -> &'static str {
-        match self {
-            Self::Button => "component-button-desc",
-            Self::Label => "component-label-desc",
-            Self::TextBox => "component-textbox-desc",
-        }
+    pub fn i18n_desc_key(self) -> String {
+        format!("{}-desc", self.i18n_key())
     }
 
     /// Taille par défaut (largeur, hauteur) en points.
@@ -77,37 +134,69 @@ impl ComponentKind {
             Self::Button => (96.0, 28.0),
             Self::Label => (96.0, 20.0),
             Self::TextBox => (160.0, 24.0),
+            Self::CheckBox | Self::RadioButton => (128.0, 22.0),
+            Self::ComboBox => (160.0, 24.0),
+            Self::ListBox => (160.0, 96.0),
+            Self::ProgressBar => (160.0, 20.0),
+            Self::Slider => (160.0, 22.0),
+            Self::GroupBox => (200.0, 120.0),
+            Self::Panel => (200.0, 120.0),
         }
     }
 
-    /// Texte initial (`Button1`, `Label1`… comme dans Windows Forms ; vide pour TextBox).
+    /// Texte initial (`Button1`, `CheckBox1`… comme dans Windows Forms).
     pub fn default_text(self, index: usize) -> String {
         match self {
-            Self::Button => format!("Button{index}"),
-            Self::Label => format!("Label{index}"),
-            Self::TextBox => String::new(),
+            Self::TextBox
+            | Self::ComboBox
+            | Self::ListBox
+            | Self::ProgressBar
+            | Self::Slider
+            | Self::Panel => String::new(),
+            _ => format!("{}{index}", self.type_name()),
         }
+    }
+
+    /// Propriétés propres au composant.
+    pub fn features(self) -> &'static [Feature] {
+        match self {
+            Self::Button | Self::Label | Self::TextBox | Self::GroupBox => &[Feature::Text],
+            Self::CheckBox => &[Feature::Text, Feature::Checked],
+            Self::RadioButton => &[Feature::Text, Feature::Checked, Feature::Group],
+            Self::ComboBox | Self::ListBox => &[Feature::Items],
+            Self::ProgressBar | Self::Slider => &[Feature::Value],
+            Self::Panel => &[],
+        }
+    }
+
+    pub fn has(self, f: Feature) -> bool {
+        self.features().contains(&f)
     }
 
     /// Événements pris en charge.
     pub fn events(self) -> &'static [EventKind] {
         match self {
-            Self::Button => &[EventKind::Click],
-            Self::Label => &[EventKind::Click],
+            Self::Button | Self::Label => &[EventKind::Click],
             Self::TextBox => &[EventKind::TextChanged],
+            Self::CheckBox | Self::RadioButton => &[EventKind::CheckedChanged],
+            Self::ComboBox | Self::ListBox => &[EventKind::SelectionChanged],
+            Self::Slider => &[EventKind::ValueChanged],
+            Self::ProgressBar | Self::GroupBox | Self::Panel => &[],
         }
     }
 
     /// Événement ouvert par un double-clic dans le concepteur.
-    pub fn default_event(self) -> EventKind {
-        self.events()[0]
+    pub fn default_event(self) -> Option<EventKind> {
+        self.events().first().copied()
+    }
+
+    /// Conteneur visuel (dessiné derrière les autres contrôles).
+    pub fn is_container(self) -> bool {
+        matches!(self, Self::GroupBox | Self::Panel)
     }
 }
 
 /// Événement auquel un gestionnaire Rust peut être associé.
-///
-/// Les autres événements du cahier des charges (DoubleClick, SelectionChanged,
-/// Closing, Resize, KeyDown…) seront ajoutés avec les composants qui les utilisent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum EventKind {
     Click,
@@ -118,9 +207,18 @@ pub enum EventKind {
     Closing,
     /// Fenêtre fermée.
     Closed,
+    /// Case cochée ou décochée.
+    CheckedChanged,
+    /// Élément sélectionné changé (liste, liste déroulante).
+    SelectionChanged,
+    /// Valeur changée (curseur).
+    ValueChanged,
 }
 
 impl EventKind {
+    /// Événements de la fenêtre elle-même.
+    pub const FORM_EVENTS: [EventKind; 3] = [Self::Load, Self::Closing, Self::Closed];
+
     /// Nom de l'événement (style Windows Forms).
     pub fn name(self) -> &'static str {
         match self {
@@ -129,6 +227,9 @@ impl EventKind {
             Self::Load => "Load",
             Self::Closing => "Closing",
             Self::Closed => "Closed",
+            Self::CheckedChanged => "CheckedChanged",
+            Self::SelectionChanged => "SelectionChanged",
+            Self::ValueChanged => "ValueChanged",
         }
     }
 
@@ -140,6 +241,9 @@ impl EventKind {
             Self::Load => "load",
             Self::Closing => "closing",
             Self::Closed => "closed",
+            Self::CheckedChanged => "checked_changed",
+            Self::SelectionChanged => "selection_changed",
+            Self::ValueChanged => "value_changed",
         }
     }
 
@@ -151,11 +255,11 @@ impl EventKind {
             Self::Load => "event-load",
             Self::Closing => "event-closing",
             Self::Closed => "event-closed",
+            Self::CheckedChanged => "event-checked-changed",
+            Self::SelectionChanged => "event-selection-changed",
+            Self::ValueChanged => "event-value-changed",
         }
     }
-
-    /// Événements de la fenêtre elle-même.
-    pub const FORM_EVENTS: [EventKind; 3] = [Self::Load, Self::Closing, Self::Closed];
 
     /// Type de retour du gestionnaire (`Closing` retourne `bool` : `false` annule).
     pub fn handler_return(self) -> Option<&'static str> {

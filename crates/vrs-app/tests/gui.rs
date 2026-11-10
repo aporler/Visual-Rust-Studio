@@ -468,7 +468,8 @@ fn syn_check(src: &str) {
 fn startup_form_close_strategy_and_closing_handler() {
     let dir = tempfile::tempdir().unwrap();
     let mut h = harness(app_in(dir.path(), "fr-CA"));
-    h.state_mut().create_project(ProjectKind::Gui, dir.path(), "Multi");
+    h.state_mut()
+        .create_project(ProjectKind::Gui, dir.path(), "Multi");
     h.run();
     h.state_mut().add_form("Form2");
     h.run();
@@ -476,7 +477,10 @@ fn startup_form_close_strategy_and_closing_handler() {
     run_cmd(&mut h, Command::SetCloseStrategy(true));
     let root = h.state().project.as_ref().unwrap().root.clone();
     let mod_rs = std::fs::read_to_string(root.join("src/forms/mod.rs")).unwrap();
-    assert!(mod_rs.contains("pub fn startup_form() -> Form2"), "{mod_rs}");
+    assert!(
+        mod_rs.contains("pub fn startup_form() -> Form2"),
+        "{mod_rs}"
+    );
     assert!(mod_rs.contains("CloseStrategy::LastFormCloses"), "{mod_rs}");
     let reopened = vrs_project::open_project(&root).unwrap();
     assert_eq!(reopened.file.startup_form.as_deref(), Some("Form2"));
@@ -490,9 +494,57 @@ fn startup_form_close_strategy_and_closing_handler() {
         }),
     );
     let app = h.state();
-    let Some(Tab::Code(e)) = app.active_tab() else { panic!() };
-    assert!(e.text.contains("pub fn form2_closing(&mut self, app: &mut AppContext) -> bool"));
+    let Some(Tab::Code(e)) = app.active_tab() else {
+        panic!()
+    };
+    assert!(
+        e.text
+            .contains("pub fn form2_closing(&mut self, app: &mut AppContext) -> bool")
+    );
     assert!(e.completion.forms.contains(&"Form1".to_string()));
     let designer = std::fs::read_to_string(root.join("src/forms/form2_designer.rs")).unwrap();
     assert!(designer.contains("fn closing(&mut self, app: &mut AppContext) -> bool"));
+}
+
+/// Phase 7 : tous les composants se placent, s'affichent et ont leurs propriétés.
+#[test]
+fn every_component_in_designer_and_properties() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(app_in(dir.path(), "fr-CA"));
+    h.state_mut()
+        .create_project(ProjectKind::Gui, dir.path(), "Tous");
+    h.run();
+    let names: Vec<String> = {
+        let d = h.state_mut().active_designer().unwrap();
+        ComponentKind::ALL
+            .iter()
+            .enumerate()
+            .map(|(i, k)| {
+                d.add_control(
+                    *k,
+                    8.0 + (i % 3) as f32 * 170.0,
+                    8.0 + (i / 3) as f32 * 100.0,
+                )
+            })
+            .collect()
+    };
+    for n in &names {
+        h.state_mut().active_designer().unwrap().selection = vec![n.clone()];
+        h.run();
+    }
+    assert!(h.query_by_label_contains("Éléments (Items)").is_none());
+    h.state_mut().active_designer().unwrap().selection = vec!["list_box1".into()];
+    h.run();
+    assert!(h.query_by_label_contains("Éléments (Items)").is_some());
+    assert!(
+        h.state().i18n.missing_keys().is_empty(),
+        "{:?}",
+        h.state().i18n.missing_keys()
+    );
+    run_cmd(&mut h, Command::SaveAll);
+    let root = h.state().project.as_ref().unwrap().root.clone();
+    let designer = std::fs::read_to_string(root.join("src/forms/form1_designer.rs")).unwrap();
+    for k in ComponentKind::ALL {
+        assert!(designer.contains(k.state_type()), "{}", k.state_type());
+    }
 }

@@ -5,7 +5,7 @@ use egui::{CursorIcon, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2, pos2, vec2};
 use vrs_components::ops::snap;
 use vrs_components::{ComponentKind, Control, EventKind};
 use vrs_i18n::I18n;
-use vrs_runtime::{Bounds, ButtonState, LabelState, TextBoxState};
+use vrs_runtime::Bounds;
 use vrs_settings::DesignerSettings;
 
 use crate::state::{DesignerOutput, DesignerState, DragOp, HandlerRequest, now};
@@ -62,35 +62,70 @@ fn handle_cursor((dx, dy): (i8, i8)) -> CursorIcon {
 }
 
 /// Dessine un contrôle avec les fonctions du runtime (rendu identique à l'application).
-fn render_control(
-    ui: &mut egui::Ui,
-    c: &Control,
-    preview_text: Option<&mut String>,
-) -> egui::Response {
+fn render_control(ui: &mut egui::Ui, c: &mut Control) -> egui::Response {
+    use vrs_runtime as rt;
     let b = bounds(c);
+    let name = c.name.clone();
+    macro_rules! state {
+        ($t:ident) => {{
+            let mut s = rt::$t::new(c.text.clone(), b);
+            s.enabled = c.enabled;
+            s
+        }};
+    }
     match c.kind {
-        ComponentKind::Button => {
-            let mut s = ButtonState::new(c.text.clone(), b);
-            s.enabled = c.enabled;
-            vrs_runtime::button(ui, &c.name, &s)
-        }
-        ComponentKind::Label => {
-            let mut s = LabelState::new(c.text.clone(), b);
-            s.enabled = c.enabled;
-            vrs_runtime::label(ui, &c.name, &s)
-        }
+        ComponentKind::Button => rt::button(ui, &name, &state!(ButtonState)),
+        ComponentKind::Label => rt::label(ui, &name, &state!(LabelState)),
         ComponentKind::TextBox => {
-            let mut s = TextBoxState::new(c.text.clone(), b);
-            s.enabled = c.enabled;
-            if let Some(t) = &preview_text {
-                s.text = (*t).clone();
-            }
-            let r = vrs_runtime::text_box(ui, &c.name, &mut s);
-            if let Some(t) = preview_text {
-                *t = s.text;
-            }
+            let mut s = state!(TextBoxState);
+            let r = rt::text_box(ui, &name, &mut s);
+            c.text = s.text;
             r
         }
+        ComponentKind::CheckBox => {
+            let mut s = state!(CheckBoxState);
+            s.checked = c.checked;
+            let r = rt::check_box(ui, &name, &mut s);
+            c.checked = s.checked;
+            r
+        }
+        ComponentKind::RadioButton => {
+            let mut s = state!(RadioButtonState);
+            s.checked = c.checked;
+            let r = rt::radio_button(ui, &name, &mut s);
+            c.checked = s.checked;
+            r
+        }
+        ComponentKind::ComboBox => {
+            let mut s = state!(ComboBoxState);
+            s.items = c.items.clone();
+            s.selected = c.selected;
+            let r = rt::combo_box(ui, &name, &mut s);
+            c.selected = s.selected;
+            r
+        }
+        ComponentKind::ListBox => {
+            let mut s = state!(ListBoxState);
+            s.items = c.items.clone();
+            s.selected = c.selected;
+            let r = rt::list_box(ui, &name, &mut s);
+            c.selected = s.selected;
+            r
+        }
+        ComponentKind::ProgressBar => {
+            let mut s = state!(ProgressBarState);
+            (s.value, s.minimum, s.maximum) = (c.value, c.minimum, c.maximum);
+            rt::progress_bar(ui, &name, &s)
+        }
+        ComponentKind::Slider => {
+            let mut s = state!(SliderState);
+            (s.value, s.minimum, s.maximum) = (c.value, c.minimum, c.maximum);
+            let r = rt::slider(ui, &name, &mut s);
+            c.value = s.value;
+            r
+        }
+        ComponentKind::GroupBox => rt::group_box(ui, &name, &state!(GroupBoxState)),
+        ComponentKind::Panel => rt::panel(ui, &name, &state!(PanelState)),
     }
 }
 
@@ -194,20 +229,19 @@ pub fn canvas_ui(
             // Contrôles : rendu réel, dans une zone limitée à la zone cliente.
             let mut previews = std::mem::take(&mut state.preview_states);
             let preview = state.preview;
-            let controls = state.doc.controls.clone();
+            // Cadres d'abord (derrière), comme dans l'application générée.
+            let mut controls = state.doc.controls.clone();
+            controls.sort_by_key(|c| !c.kind.is_container());
             ui.scope_builder(egui::UiBuilder::new().max_rect(client), |ui| {
                 ui.set_clip_rect(client.intersect(ui.clip_rect()));
                 for c in &controls {
-                    let text = if preview && c.kind == ComponentKind::TextBox {
-                        Some(
-                            previews
-                                .entry(c.name.clone())
-                                .or_insert_with(|| c.text.clone()),
-                        )
+                    if preview {
+                        // Aperçu : l'état interactif est conservé entre les images.
+                        let p = previews.entry(c.name.clone()).or_insert_with(|| c.clone());
+                        render_control(ui, p);
                     } else {
-                        None
-                    };
-                    render_control(ui, c, text);
+                        render_control(ui, &mut c.clone());
+                    }
                     if !c.visible {
                         // Contrôle masqué à l'exécution : affiché en transparence.
                         let r = control_rect(origin, c);
@@ -253,10 +287,12 @@ pub fn canvas_ui(
                 }
                 if resp.double_clicked() {
                     state.selection = vec![c.name.clone()];
-                    out.open_handler = Some(HandlerRequest {
-                        control: Some(c.name.clone()),
-                        event: c.kind.default_event(),
-                    });
+                    if let Some(event) = c.kind.default_event() {
+                        out.open_handler = Some(HandlerRequest {
+                            control: Some(c.name.clone()),
+                            event,
+                        });
+                    }
                 }
                 if resp.drag_started() {
                     state.history.break_coalescing();
@@ -271,10 +307,12 @@ pub fn canvas_ui(
                     });
                 }
                 resp.context_menu(|ui| {
-                    if ui.button(i18n.tr("cmd-view-code")).clicked() {
+                    if let Some(event) = c.kind.default_event()
+                        && ui.button(i18n.tr("cmd-view-code")).clicked()
+                    {
                         out.open_handler = Some(HandlerRequest {
                             control: Some(c.name.clone()),
-                            event: c.kind.default_event(),
+                            event,
                         });
                         ui.close();
                     }

@@ -58,7 +58,7 @@ pub struct DesignerState {
     pub(crate) drag: Option<DragOp>,
     /// Tampon d'édition du nom (validé à la perte du focus).
     pub(crate) name_edit: Option<(String, String)>,
-    pub(crate) preview_states: std::collections::HashMap<String, String>,
+    pub(crate) preview_states: std::collections::HashMap<String, Control>,
 }
 
 impl DesignerState {

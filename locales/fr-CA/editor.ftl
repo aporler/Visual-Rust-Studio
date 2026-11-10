@@ -62,3 +62,15 @@ api-app-with-form = Lit ou modifie les contrôles d'une autre fenêtre ouverte :
 hint-show-form = Dans Visual Rust Studio, on ouvre une fenêtre avec `app.show_form({ $form }::default())` (Form.Show() en VB.NET).
 hint-show-dialog = Fenêtre modale : `app.show_dialog({ $form }::default())` (ShowDialog() en VB.NET). Pour récupérer ses données à la fermeture : `app.show_dialog_then(…)`.
 hint-hide = Pour masquer la fenêtre en cours : `app.hide()` (Me.Hide() en VB.NET).
+
+
+api-checked = `true` si la case est cochée (bool).
+api-group = Groupe de boutons d'option qui s'excluent (String).
+api-items = Liste des éléments (Vec<String>). Exemple : `self.list_box1.items.push(String::from("Nouveau"));`
+api-selected = Index de l'élément sélectionné (`Option<usize>`) : `Some(0)` pour le premier, `None` si rien n'est sélectionné.
+api-selected-text = Texte de l'élément sélectionné (`Option<&str>`).
+api-value = Valeur actuelle (f32).
+api-minimum = Valeur minimale (f32).
+api-maximum = Valeur maximale (f32).
+api-app-message-box = Affiche un message dans une boîte modale avec un bouton OK (MsgBox en VB.NET).
+hint-msgbox = Dans Visual Rust Studio, on affiche un message avec `app.message_box("…")` (MsgBox / MessageBox.Show en VB.NET).

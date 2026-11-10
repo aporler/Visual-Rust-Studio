@@ -1,7 +1,7 @@
 //! Panneau des propriétés.
 
 use egui::{DragValue, RichText};
-use vrs_components::{EventKind, NameError};
+use vrs_components::{EventKind, Feature, NameError};
 use vrs_i18n::I18n;
 
 use crate::state::{DesignerOutput, DesignerState, HandlerRequest, now};
@@ -240,6 +240,63 @@ fn control_properties(
             row(ui, i18n.tr("prop-enabled"), |ui| {
                 ui.checkbox(&mut c.enabled, "");
             });
+            if c.kind.has(Feature::Checked) {
+                row(ui, i18n.tr("prop-checked"), |ui| {
+                    ui.checkbox(&mut c.checked, "");
+                });
+            }
+            if c.kind.has(Feature::Group) {
+                row(ui, i18n.tr("prop-group"), |ui| {
+                    ui.text_edit_singleline(&mut c.group)
+                        .on_hover_text(i18n.tr("prop-group-hint"));
+                });
+            }
+            if c.kind.has(Feature::Items) {
+                ui.label(RichText::new(i18n.tr("prop-group-data")).strong());
+                ui.end_row();
+                row(ui, i18n.tr("prop-items"), |ui| {
+                    let mut text = c.items.join("\n");
+                    let r = ui
+                        .add(egui::TextEdit::multiline(&mut text).desired_rows(4))
+                        .on_hover_text(i18n.tr("prop-items-hint"));
+                    if r.changed() {
+                        c.items = text.lines().map(str::to_owned).collect();
+                        if text.ends_with('\n') {
+                            c.items.push(String::new());
+                        }
+                    }
+                });
+                row(ui, i18n.tr("prop-selected"), |ui| {
+                    let none = i18n.tr("events-none");
+                    let shown = c
+                        .selected
+                        .and_then(|i| c.items.get(i))
+                        .cloned()
+                        .unwrap_or_else(|| none.clone());
+                    egui::ComboBox::from_id_salt("vrs-prop-selected")
+                        .selected_text(shown)
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut c.selected, None, none);
+                            for (i, item) in c.items.iter().enumerate() {
+                                ui.selectable_value(&mut c.selected, Some(i), item.as_str());
+                            }
+                        });
+                });
+            }
+            if c.kind.has(Feature::Value) {
+                ui.label(RichText::new(i18n.tr("prop-group-data")).strong());
+                ui.end_row();
+                row(ui, i18n.tr("prop-minimum"), |ui| {
+                    ui.add(DragValue::new(&mut c.minimum).speed(1.0));
+                });
+                row(ui, i18n.tr("prop-maximum"), |ui| {
+                    ui.add(DragValue::new(&mut c.maximum).speed(1.0));
+                });
+                let (min, max) = (c.minimum.min(c.maximum), c.maximum.max(c.minimum));
+                row(ui, i18n.tr("prop-value"), |ui| {
+                    ui.add(DragValue::new(&mut c.value).range(min..=max).speed(1.0));
+                });
+            }
         });
     ui.add_space(6.0);
     ui.strong(i18n.tr("prop-group-events"));

@@ -162,6 +162,17 @@ fn vb_hints(ctx: &CompletionContext) -> Vec<(Vec<String>, CompletionItem)> {
             ));
         }
     }
+    if ctx.is_form {
+        v.push((
+            words(&["msgbox", "messagebox"]),
+            CompletionItem::new(
+                "MsgBox(…) → app.message_box(…)",
+                "app.message_box(\"$0\");",
+                ItemKind::Hint,
+                "hint-msgbox",
+            ),
+        ));
+    }
     v.push((
         words(&["dim"]),
         CompletionItem::new("Dim → let", "let $0 = ", ItemKind::Hint, "hint-dim"),
@@ -246,6 +257,12 @@ fn members(path: &str, ctx: &CompletionContext) -> Vec<CompletionItem> {
                 CompletionItem::new("close()", "close()", ItemKind::Method, "api-app-close"),
                 CompletionItem::new("hide()", "hide()", ItemKind::Method, "api-app-hide"),
                 CompletionItem::new(
+                    "message_box(…)",
+                    "message_box(\"$0\");",
+                    ItemKind::Method,
+                    "api-app-message-box",
+                ),
+                CompletionItem::new(
                     "set_title(…)",
                     "set_title(\"$0\")",
                     ItemKind::Method,
@@ -306,13 +323,48 @@ fn members(path: &str, ctx: &CompletionContext) -> Vec<CompletionItem> {
                     .arg("kind", kind)
             })
             .collect(),
-        ["self", control] if ctx.controls.iter().any(|(n, _)| n == control) => vec![
-            CompletionItem::new("text", "text", ItemKind::Field, "api-text"),
-            CompletionItem::new("visible", "visible", ItemKind::Field, "api-visible"),
-            CompletionItem::new("enabled", "enabled", ItemKind::Field, "api-enabled"),
-            CompletionItem::new("tooltip", "tooltip", ItemKind::Field, "api-tooltip"),
-            CompletionItem::new("bounds", "bounds", ItemKind::Field, "api-bounds"),
-        ],
+        ["self", control] if ctx.controls.iter().any(|(n, _)| n == control) => {
+            let kind = ctx
+                .controls
+                .iter()
+                .find(|(n, _)| n == control)
+                .map(|(_, k)| k.as_str())
+                .unwrap_or_default();
+            let mut v = vec![
+                CompletionItem::new("text", "text", ItemKind::Field, "api-text"),
+                CompletionItem::new("visible", "visible", ItemKind::Field, "api-visible"),
+                CompletionItem::new("enabled", "enabled", ItemKind::Field, "api-enabled"),
+                CompletionItem::new("tooltip", "tooltip", ItemKind::Field, "api-tooltip"),
+                CompletionItem::new("bounds", "bounds", ItemKind::Field, "api-bounds"),
+            ];
+            let extra: &[(&str, &str, ItemKind, &str)] = match kind {
+                "CheckBox" => &[("checked", "checked", ItemKind::Field, "api-checked")],
+                "RadioButton" => &[
+                    ("checked", "checked", ItemKind::Field, "api-checked"),
+                    ("group", "group", ItemKind::Field, "api-group"),
+                ],
+                "ComboBox" | "ListBox" => &[
+                    ("items", "items", ItemKind::Field, "api-items"),
+                    ("selected", "selected", ItemKind::Field, "api-selected"),
+                    (
+                        "selected_text()",
+                        "selected_text()",
+                        ItemKind::Method,
+                        "api-selected-text",
+                    ),
+                ],
+                "ProgressBar" | "Slider" => &[
+                    ("value", "value", ItemKind::Field, "api-value"),
+                    ("minimum", "minimum", ItemKind::Field, "api-minimum"),
+                    ("maximum", "maximum", ItemKind::Field, "api-maximum"),
+                ],
+                _ => &[],
+            };
+            for (l, i, k, d) in extra.iter().rev() {
+                v.insert(1, CompletionItem::new(l, i, *k, d));
+            }
+            v
+        }
         ["self", control, "text" | "tooltip"] if ctx.controls.iter().any(|(n, _)| n == control) => {
             string_methods()
         }
@@ -494,6 +546,7 @@ pub fn lint_vb_habits(text: &str, ctx: &CompletionContext) -> Vec<Lint> {
                             push(k, "hint-me", "self");
                         }
                     }
+                    "MsgBox" if ctx.is_form && call => push(k, "hint-msgbox", "app.message_box"),
                     "True" => push(k, "hint-bool", "true"),
                     "False" => push(k, "hint-bool", "false"),
                     "Nothing" => push(k, "hint-nothing", "None"),
@@ -621,7 +674,13 @@ mod tests {
         assert!(labels(&items).contains(&"push_str"));
         let t = "app.";
         let (_, items) = complete(t, t.len(), &ctx);
-        assert!(labels(&items).starts_with(&["exit()", "close()", "hide()", "set_title(…)"]));
+        assert!(labels(&items).starts_with(&[
+            "exit()",
+            "close()",
+            "hide()",
+            "message_box(…)",
+            "set_title(…)"
+        ]));
         // Fichier ordinaire : ni self ni app de VRS.
         let (_, items) = complete(t, t.len(), &CompletionContext::default());
         assert!(items.is_empty());

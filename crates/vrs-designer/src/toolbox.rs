@@ -10,6 +10,14 @@ fn icon(kind: ComponentKind) -> &'static str {
         ComponentKind::Button => "🆗",
         ComponentKind::Label => "🏷",
         ComponentKind::TextBox => "✏",
+        ComponentKind::CheckBox => "✔",
+        ComponentKind::RadioButton => "○",
+        ComponentKind::ComboBox => "⏷",
+        ComponentKind::ListBox => "📋",
+        ComponentKind::ProgressBar => "■",
+        ComponentKind::Slider => "⏵",
+        ComponentKind::GroupBox => "⏹",
+        ComponentKind::Panel => "🗋",
     }
 }
 
@@ -19,7 +27,7 @@ pub fn toolbox_ui(ui: &mut egui::Ui, state: Option<&mut DesignerState>, i18n: &I
     let Some(state) = state else {
         ui.add_enabled_ui(false, |ui| {
             for kind in ComponentKind::ALL {
-                ui.label(format!("{}  {}", icon(kind), i18n.tr(kind.i18n_key())));
+                ui.label(format!("{}  {}", icon(kind), i18n.tr(&kind.i18n_key())));
             }
         });
         return;
@@ -35,11 +43,11 @@ pub fn toolbox_ui(ui: &mut egui::Ui, state: Option<&mut DesignerState>, i18n: &I
     }
     for kind in ComponentKind::ALL {
         let selected = state.pending_tool == Some(kind);
-        let text = format!("{}  {}", icon(kind), i18n.tr(kind.i18n_key()));
+        let text = format!("{}  {}", icon(kind), i18n.tr(&kind.i18n_key()));
         let r = ui
             .selectable_label(selected, text.as_str())
             .interact(egui::Sense::drag())
-            .on_hover_text(i18n.tr(kind.i18n_desc_key()));
+            .on_hover_text(i18n.tr(&kind.i18n_desc_key()));
         // Glisser-déposer vers la surface de conception.
         r.dnd_set_drag_payload(kind);
         if r.dragged() {

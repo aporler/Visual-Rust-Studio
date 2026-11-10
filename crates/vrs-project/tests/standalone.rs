@@ -50,6 +50,23 @@ fn gui_project_compiles_without_vrs() {
     let button = form.add_control(ComponentKind::Button, 16.0, 16.0);
     let text_box = form.add_control(ComponentKind::TextBox, 16.0, 56.0);
     form.add_control(ComponentKind::Label, 16.0, 96.0);
+    // Tous les autres composants, avec leurs propriétés et événements.
+    for (i, kind) in ComponentKind::ALL.iter().skip(3).enumerate() {
+        let name = form.add_control(
+            *kind,
+            200.0 + (i % 2) as f32 * 180.0,
+            16.0 + (i / 2) as f32 * 110.0,
+        );
+        let c = form.control_mut(&name).unwrap();
+        c.items = vec!["Un".into(), "Deux".into()];
+        c.selected = Some(0);
+        c.value = 40.0;
+        c.checked = true;
+        if let Some(ev) = kind.default_event() {
+            c.events.insert(ev, ev.default_handler(&name));
+        }
+    }
+    form.add_control(ComponentKind::RadioButton, 200.0, 460.0);
     form.control_mut(&button).unwrap().text = "Dire bonjour".into();
     // Double-clic sur le bouton : création du gestionnaire Click.
     form.control_mut(&button)
@@ -61,15 +78,26 @@ fn gui_project_compiles_without_vrs() {
     // Enregistrement et réouverture du projet, puis génération du code.
     let project = open_project(&project.root).unwrap();
     let report = project.sync_code(&[], &EnglishComments).unwrap();
-    assert_eq!(report.handlers_added, vec!["button1_click".to_string()]);
+    assert!(report.handlers_added.contains(&"button1_click".to_string()));
+    assert!(
+        report
+            .handlers_added
+            .contains(&"slider1_value_changed".to_string())
+    );
 
     // L'utilisateur écrit son code dans le gestionnaire.
     let user = project.root.join("src/forms/form1.rs");
     let src = std::fs::read_to_string(&user).unwrap();
-    let src = src.replace(
-        "// TODO: write your code here.",
-        &format!("self.{text_box}.text = String::from(\"Bonjour depuis Rust !\");"),
-    );
+    let src = src
+        .replace(
+            "// TODO: write your code here.",
+            &format!("self.{text_box}.text = String::from(\"Bonjour depuis Rust !\");"),
+        )
+        .replacen(
+            "// TODO: write your code here.",
+            "self.progress_bar1.value = self.slider1.value;",
+            1,
+        );
     std::fs::write(&user, &src).unwrap();
 
     // Ajout de Form2 : une zone de texte et un bouton OK qui ferme la fenêtre.

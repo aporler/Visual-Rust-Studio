@@ -54,6 +54,11 @@
 - **Editor**: Rust syntax highlighting, line numbers, auto-indent, tabs
   replaced by spaces, find/replace, go to line, rustfmt (command and on save),
   warning on generated files.
+- **Components**: Button, Label, TextBox, CheckBox, RadioButton (exclusive
+  groups), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel, with their
+  own properties (Checked, Items, Selected, Value, Minimum, Maximum, Group) and
+  events (Click, TextChanged, CheckedChanged, SelectionChanged, ValueChanged).
+  `app.message_box("…")` shows a modal message (MsgBox).
 - **Multiple windows**: native windows (egui viewports) or sub-windows when
   the platform has a single window; simulated modal dialogs (the other windows
   are disabled); Load, Closing (can cancel) and Closed events; startup window
@@ -140,6 +145,11 @@
   tabulation remplacée par des espaces, rechercher/remplacer, aller à la ligne,
   rustfmt (commande et à l'enregistrement), avertissement sur les fichiers
   générés.
+- **Composants** : Button, Label, TextBox, CheckBox, RadioButton (groupes
+  exclusifs), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel, avec
+  leurs propriétés (Checked, Items, Selected, Value, Minimum, Maximum, Group)
+  et événements (Click, TextChanged, CheckedChanged, SelectionChanged,
+  ValueChanged). `app.message_box("…")` affiche un message modal (MsgBox).
 - **Multifenêtre** : fenêtres natives (viewports egui) ou sous-fenêtres si la
   plateforme n'a qu'une fenêtre ; dialogues modaux simulés (les autres
   fenêtres sont désactivées) ; événements Load, Closing (annulable) et

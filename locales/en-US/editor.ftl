@@ -62,3 +62,15 @@ api-app-with-form = Reads or changes the controls of another open window: `app.w
 hint-show-form = In Visual Rust Studio, a window is opened with `app.show_form({ $form }::default())` (Form.Show() in VB.NET).
 hint-show-dialog = Modal window: `app.show_dialog({ $form }::default())` (ShowDialog() in VB.NET). To get data back when it closes: `app.show_dialog_then(…)`.
 hint-hide = To hide the current window: `app.hide()` (Me.Hide() in VB.NET).
+
+
+api-checked = `true` if checked (bool).
+api-group = Group of mutually exclusive radio buttons (String).
+api-items = List of items (Vec<String>). Example: `self.list_box1.items.push(String::from("New"));`
+api-selected = Index of the selected item (`Option<usize>`): `Some(0)` for the first, `None` if nothing is selected.
+api-selected-text = Text of the selected item (`Option<&str>`).
+api-value = Current value (f32).
+api-minimum = Minimum value (f32).
+api-maximum = Maximum value (f32).
+api-app-message-box = Shows a message in a modal box with an OK button (MsgBox in VB.NET).
+hint-msgbox = In Visual Rust Studio, a message is shown with `app.message_box("…")` (MsgBox / MessageBox.Show in VB.NET).

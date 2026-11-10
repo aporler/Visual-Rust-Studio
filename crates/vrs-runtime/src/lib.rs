@@ -86,8 +86,102 @@ pub struct TextBoxState {
     pub tooltip: String,
 }
 
+/// État d'une case à cocher (`CheckBox`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CheckBoxState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    pub checked: bool,
+}
+
+/// État d'un bouton d'option (`RadioButton`). Dans un même `group`, un seul
+/// bouton est coché à la fois.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RadioButtonState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    pub checked: bool,
+    pub group: String,
+}
+
+/// État d'une liste déroulante (`ComboBox`). `text` s'affiche quand rien n'est sélectionné.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ComboBoxState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    pub items: Vec<String>,
+    pub selected: Option<usize>,
+}
+
+/// État d'une liste (`ListBox`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct ListBoxState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    pub items: Vec<String>,
+    pub selected: Option<usize>,
+}
+
+/// État d'une barre de progression (`ProgressBar`). `text` remplace le pourcentage s'il n'est pas vide.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ProgressBarState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    pub value: f32,
+    pub minimum: f32,
+    pub maximum: f32,
+}
+
+/// État d'un curseur (`Slider`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct SliderState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+    pub value: f32,
+    pub minimum: f32,
+    pub maximum: f32,
+}
+
+/// État d'un cadre avec titre (`GroupBox`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct GroupBoxState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+}
+
+/// État d'un panneau (`Panel`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct PanelState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    pub enabled: bool,
+    pub tooltip: String,
+}
+
 macro_rules! impl_state_new {
-    ($($t:ident),*) => {$(
+    ($($t:ident { $($f:ident : $v:expr),* }),* $(,)?) => {$(
         impl $t {
             /// Nouvel état visible et activé.
             pub fn new(text: impl Into<String>, bounds: Bounds) -> Self {
@@ -97,12 +191,60 @@ macro_rules! impl_state_new {
                     visible: true,
                     enabled: true,
                     tooltip: String::new(),
+                    $($f: $v,)*
                 }
             }
         }
     )*};
 }
-impl_state_new!(ButtonState, LabelState, TextBoxState);
+impl_state_new!(
+    ButtonState {},
+    LabelState {},
+    TextBoxState {},
+    CheckBoxState { checked: false },
+    RadioButtonState {
+        checked: false,
+        group: String::new()
+    },
+    ComboBoxState {
+        items: Vec::new(),
+        selected: None
+    },
+    ListBoxState {
+        items: Vec::new(),
+        selected: None
+    },
+    ProgressBarState {
+        value: 0.0,
+        minimum: 0.0,
+        maximum: 100.0
+    },
+    SliderState {
+        value: 0.0,
+        minimum: 0.0,
+        maximum: 100.0
+    },
+    GroupBoxState {},
+    PanelState {},
+);
+
+impl ComboBoxState {
+    /// Texte de l'élément sélectionné.
+    pub fn selected_text(&self) -> Option<&str> {
+        self.selected
+            .and_then(|i| self.items.get(i))
+            .map(String::as_str)
+    }
+}
+
+impl ListBoxState {
+    /// Texte de l'élément sélectionné.
+    pub fn selected_text(&self) -> Option<&str> {
+        self.selected
+            .and_then(|i| self.items.get(i))
+            .map(String::as_str)
+    }
+}
 
 /// Dessine un contenu dans le rectangle `bounds`, avec l'état activé/désactivé.
 fn place(
@@ -214,6 +356,290 @@ pub fn text_box(ui: &mut egui::Ui, id_salt: &str, state: &mut TextBoxState) -> e
         },
     );
     with_tooltip(r, tooltip)
+}
+
+/// Dessine une case à cocher. `response.changed()` indique un changement.
+pub fn check_box(ui: &mut egui::Ui, id_salt: &str, state: &mut CheckBoxState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let CheckBoxState {
+        text,
+        bounds,
+        enabled,
+        tooltip,
+        checked,
+        ..
+    } = state;
+    let r = place(
+        ui,
+        id_salt,
+        *bounds,
+        *enabled,
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| ui.checkbox(checked, text.as_str()),
+    );
+    with_tooltip(r, tooltip)
+}
+
+/// Dessine un bouton d'option. `response.changed()` indique qu'il vient d'être coché.
+pub fn radio_button(
+    ui: &mut egui::Ui,
+    id_salt: &str,
+    state: &mut RadioButtonState,
+) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let RadioButtonState {
+        text,
+        bounds,
+        enabled,
+        tooltip,
+        checked,
+        ..
+    } = state;
+    let r = place(
+        ui,
+        id_salt,
+        *bounds,
+        *enabled,
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            let mut r = ui.radio(*checked, text.as_str());
+            if r.clicked() && !*checked {
+                *checked = true;
+                r.mark_changed();
+            }
+            r
+        },
+    );
+    with_tooltip(r, tooltip)
+}
+
+/// Dessine une liste déroulante. `response.changed()` indique une nouvelle sélection.
+pub fn combo_box(ui: &mut egui::Ui, id_salt: &str, state: &mut ComboBoxState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let ComboBoxState {
+        text,
+        bounds,
+        enabled,
+        tooltip,
+        items,
+        selected,
+        ..
+    } = state;
+    let before = *selected;
+    let width = bounds.width;
+    let mut r = place(
+        ui,
+        id_salt,
+        *bounds,
+        *enabled,
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            let shown = selected
+                .and_then(|i| items.get(i))
+                .cloned()
+                .unwrap_or_else(|| text.clone());
+            egui::ComboBox::from_id_salt(id_salt)
+                .width(width - 8.0)
+                .selected_text(shown)
+                .show_ui(ui, |ui| {
+                    for (i, item) in items.iter().enumerate() {
+                        ui.selectable_value(selected, Some(i), item.as_str());
+                    }
+                })
+                .response
+        },
+    );
+    if *selected != before {
+        r.mark_changed();
+    }
+    with_tooltip(r, tooltip)
+}
+
+/// Dessine une liste. `response.changed()` indique une nouvelle sélection.
+pub fn list_box(ui: &mut egui::Ui, id_salt: &str, state: &mut ListBoxState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let ListBoxState {
+        bounds,
+        enabled,
+        tooltip,
+        items,
+        selected,
+        ..
+    } = state;
+    let before = *selected;
+    let mut r = place(
+        ui,
+        id_salt,
+        *bounds,
+        *enabled,
+        egui::Layout::top_down_justified(egui::Align::Min),
+        |ui| {
+            egui::Frame::group(ui.style())
+                .inner_margin(2.0)
+                .show(ui, |ui| {
+                    ui.set_min_size(ui.available_size());
+                    egui::ScrollArea::vertical()
+                        .id_salt(id_salt)
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            for (i, item) in items.iter().enumerate() {
+                                if ui
+                                    .selectable_label(*selected == Some(i), item.as_str())
+                                    .clicked()
+                                {
+                                    *selected = Some(i);
+                                }
+                            }
+                        });
+                })
+                .response
+        },
+    );
+    if *selected != before {
+        r.mark_changed();
+    }
+    with_tooltip(r, tooltip)
+}
+
+/// Dessine une barre de progression.
+pub fn progress_bar(ui: &mut egui::Ui, id_salt: &str, state: &ProgressBarState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let span = (state.maximum - state.minimum).max(f32::EPSILON);
+    let fraction = ((state.value - state.minimum) / span).clamp(0.0, 1.0);
+    let r = place(
+        ui,
+        id_salt,
+        state.bounds,
+        state.enabled,
+        egui::Layout::centered_and_justified(egui::Direction::TopDown),
+        |ui| {
+            let bar = egui::ProgressBar::new(fraction);
+            let bar = if state.text.is_empty() {
+                bar.show_percentage()
+            } else {
+                bar.text(state.text.as_str())
+            };
+            ui.add(bar)
+        },
+    );
+    with_tooltip(r, &state.tooltip)
+}
+
+/// Dessine un curseur. `response.changed()` indique une nouvelle valeur.
+pub fn slider(ui: &mut egui::Ui, id_salt: &str, state: &mut SliderState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let SliderState {
+        text,
+        bounds,
+        enabled,
+        tooltip,
+        value,
+        minimum,
+        maximum,
+        ..
+    } = state;
+    let r = place(
+        ui,
+        id_salt,
+        *bounds,
+        *enabled,
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            ui.spacing_mut().slider_width = (bounds.width - 60.0).max(20.0);
+            ui.add(egui::Slider::new(value, *minimum..=*maximum).text(text.as_str()))
+        },
+    );
+    with_tooltip(r, tooltip)
+}
+
+/// Dessine un cadre avec titre.
+pub fn group_box(ui: &mut egui::Ui, id_salt: &str, state: &GroupBoxState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let rect = state.bounds.to_rect(ui.max_rect().min);
+    let visuals = ui.visuals().clone();
+    let font = egui::TextStyle::Body.resolve(ui.style());
+    let galley = ui
+        .painter()
+        .layout_no_wrap(state.text.clone(), font, visuals.text_color());
+    let frame =
+        egui::Rect::from_min_max(rect.min + egui::vec2(0.0, galley.size().y / 2.0), rect.max);
+    let stroke = visuals.widgets.noninteractive.bg_stroke;
+    ui.painter()
+        .rect_stroke(frame, 4.0, stroke, egui::StrokeKind::Inside);
+    if !state.text.is_empty() {
+        let text_pos = rect.min + egui::vec2(8.0, 0.0);
+        let bg = egui::Rect::from_min_size(
+            text_pos - egui::vec2(3.0, 0.0),
+            galley.size() + egui::vec2(6.0, 0.0),
+        );
+        ui.painter().rect_filled(bg, 0.0, visuals.panel_fill);
+        ui.painter().galley(text_pos, galley, visuals.text_color());
+    }
+    let r = ui.interact(rect, ui.scope_id().with(id_salt), egui::Sense::hover());
+    with_tooltip(r, &state.tooltip)
+}
+
+/// Dessine un panneau (zone encadrée pour regrouper des contrôles).
+pub fn panel(ui: &mut egui::Ui, id_salt: &str, state: &PanelState) -> egui::Response {
+    if !state.visible {
+        return hidden(ui, id_salt);
+    }
+    let rect = state.bounds.to_rect(ui.max_rect().min);
+    let visuals = ui.visuals();
+    ui.painter().rect(
+        rect,
+        2.0,
+        visuals.faint_bg_color,
+        visuals.widgets.noninteractive.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
+    let r = ui.interact(rect, ui.scope_id().with(id_salt), egui::Sense::hover());
+    with_tooltip(r, &state.tooltip)
+}
+
+/// Boîte de message (MsgBox) ouverte par [`AppContext::message_box`].
+pub struct MessageBoxForm {
+    title: String,
+    text: String,
+}
+
+impl Form for MessageBoxForm {
+    fn title(&self) -> String {
+        self.title.clone()
+    }
+    fn size(&self) -> [f32; 2] {
+        let lines = self.text.lines().count().max(1) as f32;
+        [380.0, 90.0 + 18.0 * lines]
+    }
+    fn show(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+        egui::Frame::NONE.inner_margin(16.0).show(ui, |ui| {
+            ui.label(self.text.as_str());
+            ui.add_space(12.0);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui
+                    .add(egui::Button::new("OK").min_size(egui::vec2(80.0, 26.0)))
+                    .clicked()
+                    || ui.input(|i| i.key_pressed(egui::Key::Enter))
+                {
+                    app.close();
+                }
+            });
+        });
+    }
 }
 
 /// Identifiant d'une fenêtre ouverte (une même fenêtre peut avoir plusieurs instances).
@@ -345,6 +771,29 @@ impl AppContext {
         then: impl FnOnce(&mut O, F, &mut AppContext) + 'static,
     ) -> FormId {
         self.open(Box::new(form), true, Some(Self::callback(then)))
+    }
+
+    /// Affiche une boîte de message modale avec un bouton OK (MsgBox en VB.NET).
+    pub fn message_box(&mut self, text: impl Into<String>) -> FormId {
+        let title = self
+            .windows
+            .iter()
+            .find(|w| w.id == self.current)
+            .map(|w| w.title.clone())
+            .unwrap_or_default();
+        self.message_box_titled(title, text)
+    }
+
+    /// Boîte de message avec un titre.
+    pub fn message_box_titled(
+        &mut self,
+        title: impl Into<String>,
+        text: impl Into<String>,
+    ) -> FormId {
+        self.show_dialog(MessageBoxForm {
+            title: title.into(),
+            text: text.into(),
+        })
     }
 
     /// Ferme la fenêtre en cours.
@@ -948,6 +1397,88 @@ mod tests {
         h.state_mut().requests.push(Request::Close(second));
         h.state_mut().process_requests(&ctx);
         assert!(h.state().exiting);
+    }
+
+    #[test]
+    fn new_controls_and_message_box() {
+        struct All {
+            c: CheckBoxState,
+            r1: RadioButtonState,
+            cb: ComboBoxState,
+            lb: ListBoxState,
+            pb: ProgressBarState,
+            sl: SliderState,
+            gb: GroupBoxState,
+            pn: PanelState,
+            b: ButtonState,
+        }
+        impl Form for All {
+            fn title(&self) -> String {
+                "Tous".into()
+            }
+            fn size(&self) -> [f32; 2] {
+                [600.0, 400.0]
+            }
+            fn show(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+                let _ = group_box(ui, "gb", &self.gb);
+                let _ = panel(ui, "pn", &self.pn);
+                let _ = check_box(ui, "c", &mut self.c);
+                let _ = radio_button(ui, "r1", &mut self.r1);
+                let _ = combo_box(ui, "cb", &mut self.cb);
+                let lb = list_box(ui, "lb", &mut self.lb);
+                let _ = progress_bar(ui, "pb", &self.pb);
+                let _ = slider(ui, "sl", &mut self.sl);
+                if lb.changed() {
+                    self.pb.value = 75.0;
+                }
+                if button(ui, "b", &self.b).clicked() {
+                    app.message_box("Bonjour !");
+                }
+            }
+        }
+        let mut lb = ListBoxState::new("", Bounds::new(300.0, 10.0, 150.0, 90.0));
+        lb.items = vec!["Un".into(), "Deux".into()];
+        let mut cb = ComboBoxState::new("Choisir", Bounds::new(10.0, 70.0, 150.0, 24.0));
+        cb.items = vec!["A".into(), "B".into()];
+        let all = All {
+            c: CheckBoxState::new("Case", Bounds::new(10.0, 10.0, 120.0, 22.0)),
+            r1: RadioButtonState::new("Option", Bounds::new(10.0, 40.0, 120.0, 22.0)),
+            cb,
+            lb,
+            pb: ProgressBarState::new("", Bounds::new(10.0, 110.0, 150.0, 20.0)),
+            sl: SliderState::new("", Bounds::new(10.0, 140.0, 200.0, 22.0)),
+            gb: GroupBoxState::new("Cadre", Bounds::new(250.0, 200.0, 200.0, 100.0)),
+            pn: PanelState::new("", Bounds::new(10.0, 200.0, 200.0, 100.0)),
+            b: ButtonState::new("Message", Bounds::new(10.0, 320.0, 100.0, 28.0)),
+        };
+        let mut h = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(900.0, 700.0))
+            .with_accessibility_check(false)
+            .build_ui_state(
+                |ui, r: &mut Runner| r.frame(ui),
+                Runner::new(Box::new(all), CloseStrategy::MainFormCloses),
+            );
+        h.run();
+        h.get_by_label("Case").click();
+        h.get_by_label("Option").click();
+        h.get_by_label("Deux").click();
+        h.run();
+        h.get_by_label("Message").click();
+        h.run();
+        assert!(h.query_by_label_contains("Bonjour !").is_some());
+        let ctx = h.ctx.clone();
+        let state = h
+            .state_mut()
+            .with_form(&ctx, FormId(1), |f, _| {
+                let any: &mut dyn Any = f;
+                let a = any.downcast_mut::<All>().unwrap();
+                (a.c.checked, a.r1.checked, a.lb.selected, a.pb.value)
+            })
+            .unwrap();
+        assert_eq!(state, (true, true, Some(1), 75.0));
+        h.get_by_label("OK").click();
+        h.run();
+        assert!(h.query_by_label_contains("Bonjour !").is_none());
     }
 
     #[test]

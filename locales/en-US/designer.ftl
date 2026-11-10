@@ -55,3 +55,34 @@ events-go-to = Go to code
 
 event-closing = Closing
 event-closed = Closed
+
+
+component-checkbox = CheckBox
+component-radiobutton = RadioButton
+component-combobox = ComboBox
+component-listbox = ListBox
+component-progressbar = ProgressBar
+component-slider = Slider
+component-groupbox = GroupBox
+component-panel = Panel
+component-checkbox-desc = A box the user can check or uncheck.
+component-radiobutton-desc = An option: in a group, only one can be checked.
+component-combobox-desc = A drop-down list of items.
+component-listbox-desc = A list of items; the user selects one.
+component-progressbar-desc = Shows the progress of a task.
+component-slider-desc = Chooses a number by moving a cursor.
+component-groupbox-desc = A frame with a title, to group controls visually.
+component-panel-desc = A plain area to group controls visually.
+event-checked-changed = CheckedChanged
+event-selection-changed = SelectionChanged
+event-value-changed = ValueChanged
+prop-checked = Checked
+prop-group = Group
+prop-group-hint = Radio buttons with the same group are mutually exclusive.
+prop-group-data = Data
+prop-items = Items
+prop-items-hint = One item per line.
+prop-selected = Selected item
+prop-minimum = Minimum
+prop-maximum = Maximum
+prop-value = Value

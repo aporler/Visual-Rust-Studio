@@ -34,10 +34,45 @@ pub struct Control {
     /// Événement → nom de la méthode Rust qui le gère.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub events: BTreeMap<EventKind, String>,
+    /// CheckBox, RadioButton : cochée ?
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub checked: bool,
+    /// RadioButton : groupe d'options exclusives (vide : groupe par défaut).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub group: String,
+    /// ComboBox, ListBox : éléments.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub items: Vec<String>,
+    /// ComboBox, ListBox : index de l'élément sélectionné.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected: Option<usize>,
+    /// ProgressBar, Slider : valeur, minimum et maximum.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub value: f32,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub minimum: f32,
+    #[serde(default = "hundred", skip_serializing_if = "is_hundred")]
+    pub maximum: f32,
 }
 
 fn yes() -> bool {
     true
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
+fn is_zero(v: &f32) -> bool {
+    *v == 0.0
+}
+
+fn hundred() -> f32 {
+    100.0
+}
+
+fn is_hundred(v: &f32) -> bool {
+    *v == 100.0
 }
 
 impl Control {
@@ -56,6 +91,13 @@ impl Control {
             enabled: true,
             tooltip: String::new(),
             events: BTreeMap::new(),
+            checked: false,
+            group: String::new(),
+            items: Vec::new(),
+            selected: None,
+            value: 0.0,
+            minimum: 0.0,
+            maximum: 100.0,
         }
     }
 
