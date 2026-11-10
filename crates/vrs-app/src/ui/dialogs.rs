@@ -469,6 +469,12 @@ fn about(app: &mut VrsApp, ctx: &egui::Context) {
         ui.label(RichText::new(app.i18n.tr("app-tagline")).italics());
         ui.add_space(6.0);
         ui.weak(app.i18n.tr("about-license"));
+        ui.add_space(6.0);
+        ui.label(
+            RichText::new(app.i18n.tr("about-trademarks"))
+                .small()
+                .weak(),
+        );
         ui.separator();
         buttons_right(ui, |ui| ui.button(app.i18n.tr("button-close")).clicked()).inner
     });

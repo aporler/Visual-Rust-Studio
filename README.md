@@ -76,6 +76,14 @@ your applications under any license, with no attribution required.
 
 Contributions require accepting the [Contributor License Agreement](CONTRIBUTING.md).
 
+### Trademarks
+
+Microsoft, Visual Studio, Visual Basic, .NET and Windows Forms are trademarks
+of Microsoft Corporation. Rust is a trademark of the Rust Foundation. Visual
+Rust Studio is an independent project, not affiliated with or endorsed by
+Microsoft or the Rust Foundation. These names are used only to describe
+compatibility and equivalences.
+
 ---
 
 ## Français
@@ -151,3 +159,11 @@ distribuer vos applications sous la licence de votre choix, sans obligation de
 mention.
 
 Les contributions nécessitent l'acceptation de l'[accord de contribution](CONTRIBUTING.md).
+
+### Marques
+
+Microsoft, Visual Studio, Visual Basic, .NET et Windows Forms sont des marques
+de Microsoft Corporation. Rust est une marque de la Rust Foundation. Visual
+Rust Studio est un projet indépendant, non affilié à Microsoft ni à la Rust
+Foundation, et non approuvé par elles. Ces noms ne sont utilisés que pour
+décrire des compatibilités et des équivalences.

@@ -225,6 +225,7 @@ about-title = Acerca de Visual Rust Studio
 about-version = Versión { $version }
 about-description = Un entorno de desarrollo visual libre para Rust.
 about-license = Software libre bajo licencia GNU AGPL-3.0. El código de sus aplicaciones le pertenece.
+about-trademarks = Microsoft, Visual Studio, Visual Basic, .NET y Windows Forms son marcas de Microsoft Corporation. Rust es una marca de la Rust Foundation. Visual Rust Studio es un proyecto independiente, no afiliado ni respaldado por Microsoft ni por la Rust Foundation.
 
 ## Salida y diagnósticos
 
