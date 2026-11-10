@@ -58,6 +58,20 @@ impl Default for EditorOptions {
     }
 }
 
+/// Modification de texte : (début, fin, nouveau texte), positions
+/// (ligne, colonne) 0-based en caractères.
+pub type CharEdit = ((usize, usize), (usize, usize), String);
+
+/// Demandes destinées au serveur de langage (rust-analyzer), lues par l'IDE.
+/// Les positions sont des index de caractères dans le texte.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct LspRequests {
+    pub completion: Option<usize>,
+    pub hover: Option<usize>,
+    pub definition: Option<usize>,
+    pub rename: Option<(usize, String)>,
+}
+
 /// Résultat d'une image.
 #[derive(Debug, Default)]
 pub struct EditorOutput {
@@ -91,6 +105,16 @@ pub struct CodeEditor {
     lints_dirty: bool,
     /// Menu de correction rapide ouvert : (diagnostic, position à l'écran).
     fix_menu: Option<(EditorDiagnostic, egui::Pos2)>,
+    /// rust-analyzer est actif : ses diagnostics remplacent ceux de `cargo check`.
+    pub lsp_active: bool,
+    pub lsp_diagnostics: Vec<EditorDiagnostic>,
+    lsp_requests: LspRequests,
+    /// Propositions de rust-analyzer pour le mot commençant à cet index.
+    external: Option<(usize, Vec<CompletionItem>)>,
+    hover_char: Option<(usize, f64, bool)>,
+    hover_info: Option<(usize, String)>,
+    /// Renommage en cours : (index, nouveau nom, focus à donner).
+    rename: Option<(usize, String, bool)>,
 }
 
 impl CodeEditor {
@@ -122,24 +146,103 @@ impl CodeEditor {
             lints_text_len: usize::MAX,
             lints_dirty: true,
             fix_menu: None,
+            lsp_active: false,
+            lsp_diagnostics: Vec::new(),
+            lsp_requests: LspRequests::default(),
+            external: None,
+            hover_char: None,
+            hover_info: None,
+            rename: None,
         }
     }
 
     /// Ouvre la liste de propositions à la position du curseur (Ctrl+Espace).
     pub fn trigger_completion(&mut self) {
         self.popup = Some(0);
+        // Nouvelle demande à rust-analyzer.
+        self.external = None;
     }
 
     /// Propositions actuelles (début du mot remplacé, éléments).
     pub fn completion_items(&self) -> (usize, Vec<CompletionItem>) {
         let cursor = self.last_cursor.unwrap_or(self.text.chars().count());
-        assist::complete(&self.text, cursor, &self.completion)
+        self.items_at(cursor)
+    }
+
+    /// Propositions de VRS, complétées par celles de rust-analyzer.
+    fn items_at(&self, cursor: usize) -> (usize, Vec<CompletionItem>) {
+        let (start, mut items) = assist::complete(&self.text, cursor, &self.completion);
+        if let Some((at, ext)) = &self.external
+            && *at == start
+        {
+            let (_, partial, _) = assist::word_context(&self.text, cursor);
+            let lower = partial.to_lowercase();
+            for e in ext {
+                let matches = lower.is_empty() || e.label.to_lowercase().starts_with(&lower);
+                if matches
+                    && !items
+                        .iter()
+                        .any(|i| i.label == e.label || i.insert == e.insert)
+                {
+                    items.push(e.clone());
+                }
+            }
+        }
+        (start, items)
+    }
+
+    /// Demandes en attente pour le serveur de langage (vidées par l'appel).
+    pub fn take_lsp_requests(&mut self) -> LspRequests {
+        std::mem::take(&mut self.lsp_requests)
+    }
+
+    /// Reçoit les propositions de rust-analyzer demandées pour `cursor`.
+    pub fn set_external_completions(&mut self, cursor: usize, items: Vec<CompletionItem>) {
+        let (start, _, _) = assist::word_context(&self.text, cursor);
+        self.external = Some((start, items));
+    }
+
+    /// Reçoit l'infobulle de survol pour le caractère `index`.
+    pub fn set_hover(&mut self, index: usize, text: String) {
+        self.hover_info = Some((index, text));
+    }
+
+    /// Applique des modifications (ligne, colonne 0-based en caractères), par
+    /// exemple un renommage. Les modifications sont appliquées de la fin vers le début.
+    pub fn apply_text_edits(&mut self, mut edits: Vec<CharEdit>) {
+        edits.sort_by_key(|e| std::cmp::Reverse(e.0));
+        for ((l0, c0), (l1, c1), new_text) in edits {
+            let a = line_col_to_char(&self.text, l0 + 1, c0 + 1);
+            let b = line_col_to_char(&self.text, l1 + 1, c1 + 1).max(a);
+            text::replace_chars(&mut self.text, a, b, &new_text);
+        }
+        self.lints_dirty = true;
+    }
+
+    /// Ouvre la saisie du nouveau nom (F2) pour le symbole sous le curseur.
+    pub fn start_rename(&mut self) {
+        let cursor = self.last_cursor.unwrap_or(0);
+        let (start, partial, _) = assist::word_context(&self.text, cursor);
+        let rest: String = self
+            .text
+            .chars()
+            .skip(cursor)
+            .take_while(|c| c.is_alphanumeric() || *c == '_')
+            .collect();
+        self.rename = Some((start, format!("{partial}{rest}"), true));
+    }
+
+    /// Demande la définition du symbole sous le curseur (F12).
+    pub fn go_to_definition(&mut self) {
+        if let Some(c) = self.last_cursor {
+            self.lsp_requests.definition = Some(c);
+        }
     }
 
     /// Accepte la proposition `index`.
     pub fn accept_completion(&mut self, index: usize) {
         let cursor = self.last_cursor.unwrap_or(self.text.chars().count());
-        let (start, items) = assist::complete(&self.text, cursor, &self.completion);
+        let (start, items) = self.items_at(cursor);
         if let Some(item) = items.get(index) {
             let c = assist::apply_completion(&mut self.text, start, cursor, &item.insert);
             self.pending_selection = Some((c, c));
@@ -299,12 +402,15 @@ impl CodeEditor {
         let id = self.id();
         let has_focus = ui.memory(|m| m.has_focus(id));
         if has_focus && ui.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::Space)) {
-            self.popup = Some(0);
+            self.trigger_completion();
         }
         if let (true, Some(sel)) = (has_focus, self.popup) {
             let n = self.completion_items().1.len();
             if n == 0 {
-                self.popup = None;
+                // Avec rust-analyzer, les propositions peuvent arriver plus tard.
+                if !self.lsp_active {
+                    self.popup = None;
+                }
             } else if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::ArrowDown)) {
                 self.popup = Some((sel + 1) % n);
             } else if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::ArrowUp)) {
@@ -319,7 +425,18 @@ impl CodeEditor {
                 out.changed = true;
             }
         }
-        let mut underlines = self.diagnostics.clone();
+        if has_focus && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F12)) {
+            self.go_to_definition();
+        }
+        if has_focus && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F2)) && self.lsp_active
+        {
+            self.start_rename();
+        }
+        let mut underlines = if self.lsp_active {
+            self.lsp_diagnostics.clone()
+        } else {
+            self.diagnostics.clone()
+        };
         underlines.extend(self.hint_diagnostics(i18n));
         let line_count = self.text.split('\n').count().max(1);
         let digits = line_count.to_string().len().max(3);
@@ -400,6 +517,62 @@ impl CodeEditor {
                     }
                     if cursor_now.is_some() {
                         self.last_cursor = cursor_now;
+                    }
+                    // rust-analyzer : propositions pour le mot en cours.
+                    if self.lsp_active
+                        && self.popup.is_some()
+                        && (output.response.changed() || self.external.is_none())
+                        && let Some(c) = cursor_now.or(self.last_cursor)
+                    {
+                        let (start, _, _) = assist::word_context(&self.text, c);
+                        if output.response.changed()
+                            || self.external.as_ref().is_none_or(|(s, _)| *s != start)
+                        {
+                            self.external = Some((start, Vec::new()));
+                            self.lsp_requests.completion = Some(c);
+                        }
+                    }
+                    // Survol : infobulle de rust-analyzer après un court délai ;
+                    // Ctrl+clic : aller à la définition.
+                    if self.lsp_active
+                        && let Some(p) = output.response.hover_pos()
+                    {
+                        let local = p - output.galley_pos;
+                        let idx = output.galley.cursor_from_pos(local).index.0;
+                        let now = ui.input(|i| i.time);
+                        match self.hover_char {
+                            Some((i, t, requested)) if i == idx => {
+                                if !requested && now - t > 0.5 {
+                                    self.lsp_requests.hover = Some(idx);
+                                    self.hover_char = Some((i, t, true));
+                                } else if !requested {
+                                    ui.ctx().request_repaint_after(
+                                        std::time::Duration::from_millis(550),
+                                    );
+                                }
+                            }
+                            _ => {
+                                self.hover_char = Some((idx, now, false));
+                                ui.ctx()
+                                    .request_repaint_after(std::time::Duration::from_millis(550));
+                            }
+                        }
+                        if output.response.clicked() && ui.input(|i| i.modifiers.command) {
+                            self.lsp_requests.definition = Some(idx);
+                        }
+                        if let Some((i, text)) = &self.hover_info
+                            && *i == idx
+                        {
+                            let resp: egui::Response = (*output.response).clone();
+                            resp.on_hover_ui_at_pointer(|ui| {
+                                ui.set_max_width(520.0);
+                                ui.label(
+                                    RichText::new(text).monospace().size(opts.font_size * 0.85),
+                                );
+                            });
+                        }
+                    } else {
+                        self.hover_char = None;
                     }
 
                     // Navigation demandée (aller à la ligne, résultat de recherche).
@@ -488,9 +661,11 @@ impl CodeEditor {
                         cursor_now.or(self.last_cursor),
                         has_focus || output.response.has_focus(),
                     ) {
-                        let (_, items) = assist::complete(&self.text, c, &self.completion);
+                        let (_, items) = self.items_at(c);
                         if items.is_empty() {
-                            self.popup = None;
+                            if !self.lsp_active {
+                                self.popup = None;
+                            }
                         } else {
                             let pos = output.galley.pos_from_cursor(CCursor::new(c));
                             let anchor = output.galley_pos + pos.left_bottom().to_vec2();
@@ -545,6 +720,33 @@ impl CodeEditor {
                     && !just_opened)
             {
                 self.fix_menu = None;
+            }
+        }
+        if let Some((start, mut name, focus)) = self.rename.take() {
+            let mut keep = true;
+            egui::Area::new(id.with("rename"))
+                .order(egui::Order::Foreground)
+                .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 60.0))
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::popup(ui.style()).show(ui, |ui| {
+                        ui.label(i18n.tr("editor-rename"));
+                        let r = ui.add(egui::TextEdit::singleline(&mut name).desired_width(260.0));
+                        if focus {
+                            r.request_focus();
+                        }
+                        if r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
+                            if !name.trim().is_empty() {
+                                self.lsp_requests.rename = Some((start, name.trim().to_owned()));
+                            }
+                            keep = false;
+                        }
+                        if ui.input(|i| i.key_pressed(Key::Escape)) {
+                            keep = false;
+                        }
+                    });
+                });
+            if keep {
+                self.rename = Some((start, name, false));
             }
         }
         if out.changed {
@@ -669,7 +871,14 @@ fn completion_popup(
                         args.set(k.as_str(), v.clone());
                     }
                     ui.set_max_width(360.0);
-                    ui.label(RichText::new(i18n.tr_args(&item.doc_key, &args)).small());
+                    let doc = match &item.doc_text {
+                        Some(t) => t.clone(),
+                        None if item.doc_key.is_empty() => String::new(),
+                        None => i18n.tr_args(&item.doc_key, &args),
+                    };
+                    if !doc.is_empty() {
+                        ui.label(RichText::new(doc).small());
+                    }
                     ui.weak(RichText::new(i18n.tr("editor-completion-keys")).small());
                 }
             });

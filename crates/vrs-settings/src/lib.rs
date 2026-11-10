@@ -69,6 +69,8 @@ pub struct Settings {
     pub format_on_save: bool,
     /// Lancer `cargo check` en arrière-plan à chaque enregistrement.
     pub check_on_save: bool,
+    /// Utiliser rust-analyzer (diagnostics en direct, autocomplétion, définitions).
+    pub lsp_enabled: bool,
     pub designer: DesignerSettings,
     pub build: BuildSettings,
     /// Répertoire par défaut des nouveaux projets.
@@ -89,6 +91,7 @@ impl Default for Settings {
             tab_width: 4,
             format_on_save: true,
             check_on_save: true,
+            lsp_enabled: true,
             designer: DesignerSettings::default(),
             build: BuildSettings::default(),
             projects_dir: None,

@@ -74,3 +74,4 @@ api-minimum = Valeur minimale (f32).
 api-maximum = Valeur maximale (f32).
 api-app-message-box = Affiche un message dans une boîte modale avec un bouton OK (MsgBox en VB.NET).
 hint-msgbox = Dans Visual Rust Studio, on affiche un message avec `app.message_box("…")` (MsgBox / MessageBox.Show en VB.NET).
+editor-rename = Nouveau nom (Entrée pour renommer partout, Échap pour annuler)

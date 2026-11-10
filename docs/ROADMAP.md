@@ -39,9 +39,11 @@ phase 5).
 - Choosing the startup window in the IDE.
 - Renaming a window (files and types).
 
-### Phase 6 — Smart editor (started)
+### Phase 6 — Smart editor ✅
 Done: VRS-aware completion, VB.NET equivalents, quick fixes (VRS hints and
-rustc suggestions), check on save.
+rustc suggestions), check on save, rust-analyzer (live diagnostics,
+completion, hover, go to definition, rename). Remaining: rust-analyzer code
+actions, bracket matching, minimap.
 - rust-analyzer over LSP (`lsp-types`, separate process): live diagnostics,
   completion, hover, go to definition, rename.
 - Quick Fix: light bulb, change preview, undoable application (from rustc
@@ -103,9 +105,12 @@ double-clic (une avance sur la phase 5).
 - Choix de la fenêtre de démarrage dans l'IDE.
 - Renommage d'une fenêtre (fichiers et types).
 
-### Phase 6 — Éditeur intelligent (commencée)
+### Phase 6 — Éditeur intelligent ✅
 Fait : autocomplétion propre à VRS, équivalences VB.NET, corrections rapides
-(conseils VRS et suggestions de rustc), vérification à l'enregistrement.
+(conseils VRS et suggestions de rustc), vérification à l'enregistrement,
+rust-analyzer (diagnostics en direct, autocomplétion, infobulles, définition,
+renommage). Reste : code actions de rust-analyzer, correspondance des
+parenthèses, minimap.
 - rust-analyzer via LSP (`lsp-types`, processus séparé) : diagnostics en
   direct, autocomplétion, infobulles, aller à la définition, renommage.
 - Quick Fix : ampoule, aperçu du changement, application annulable (à partir

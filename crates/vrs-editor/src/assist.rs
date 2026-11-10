@@ -40,6 +40,8 @@ pub struct CompletionItem {
     /// Clé de traduction de la description, et ses paramètres.
     pub doc_key: String,
     pub doc_args: Vec<(String, String)>,
+    /// Description brute (fournie par rust-analyzer), affichée telle quelle.
+    pub doc_text: Option<String>,
 }
 
 impl CompletionItem {
@@ -50,6 +52,15 @@ impl CompletionItem {
             kind,
             doc_key: doc_key.to_owned(),
             doc_args: Vec::new(),
+            doc_text: None,
+        }
+    }
+
+    /// Proposition venant d'un serveur de langage (rust-analyzer).
+    pub fn external(label: &str, insert: &str, kind: ItemKind, doc: Option<String>) -> Self {
+        Self {
+            doc_text: doc,
+            ..Self::new(label, insert, kind, "")
         }
     }
 

@@ -21,6 +21,7 @@ vrs-designer = { path = "crates/vrs-designer" }
 vrs-codegen = { path = "crates/vrs-codegen" }
 vrs-compiler = { path = "crates/vrs-compiler" }
 vrs-editor = { path = "crates/vrs-editor" }
+vrs-lsp = { path = "crates/vrs-lsp" }
 
 eframe = "0.37"
 egui = { version = "0.37", features = ["default_fonts", "monochrome_emoji_fonts"] }

@@ -261,6 +261,8 @@ impl VrsApp {
             .map(|f| project.root.join(f))
             .find(|p| p.is_file());
         self.project = Some(project);
+        self.lsp_synced.clear();
+        self.start_lsp();
         self.refresh_tree();
         if let Some(f) = first_form {
             self.open_form(&f);
@@ -275,6 +277,7 @@ impl VrsApp {
         if let Some(b) = &self.build {
             b.kill();
         }
+        self.stop_lsp();
         self.project = None;
         self.tree = None;
         self.tabs = vec![Tab::Start];
@@ -658,13 +661,16 @@ impl VrsApp {
         self.settings.trust(&req.root);
         self.created_here.insert(req.root.clone());
         self.save_settings();
+        if self.lsp.is_some() {
+            self.start_lsp();
+        }
         self.execute(req.then, ctx);
     }
 
     /// Vérification automatique (`cargo check`) après un enregistrement : les
     /// diagnostics s'affichent dans l'éditeur sans ouvrir la sortie.
     pub fn background_check(&mut self) {
-        if !self.settings.check_on_save || self.is_building() {
+        if !self.settings.check_on_save || self.is_building() || self.lsp.is_some() {
             return;
         }
         let Some(project) = &self.project else { return };

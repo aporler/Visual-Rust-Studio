@@ -23,6 +23,7 @@
 | `cargo test -p vrs-app --test gui -- --ignored` | in the IDE: type error → `cargo check` → E0308 diagnostic + French explanation + underline in the editor |
 | `cargo clippy --workspace --all-targets` | no warnings |
 | `cargo fmt --all -- --check` | clean |
+| `cargo test -p vrs-lsp -- --ignored` and `cargo test -p vrs-app --test gui -- --ignored ide_with_rust_analyzer` | with the real rust-analyzer: completion, hover, definition, diagnostics, rename |
 | `vrs-i18n-check` | no errors; fr-CA and en-US 100 % complete |
 
 ### MVP acceptance criteria
@@ -43,7 +44,7 @@
 | 12 | Open and close Form2 | ✅ | `app.show_form(Form2::default())`, `app.show_dialog(…)` (modal), `app.close()`, `app.hide()`, `show_dialog_then` to get data back, `with_form` to reach another window, multiple instances, close strategy |
 | 13 | Build with Cargo | ✅ | Build, Run, Check, Clippy, Tests, Clean, Stop, Release mode |
 | 14 | Run independently of VRS | ✅ | standalone Cargo project (copied runtime, only dependency: eframe) |
-| 15 | Rust diagnostics and explanations | ✅ partial | `cargo check` diagnostics (list, underline, tooltip, original message, documentation link, rustc suggestions); explanations for 17 error codes and 4 lints; automatic check on save; compiler suggestions applicable as quick fixes. **No rust-analyzer yet.** |
+| 15 | Rust diagnostics and explanations | ✅ partial | `cargo check` diagnostics (list, underline, tooltip, original message, documentation link, rustc suggestions); explanations for 17 error codes and 4 lints; live diagnostics from rust-analyzer (or `cargo check` on save); compiler suggestions applicable as quick fixes |
 
 ### Other available features
 
@@ -70,6 +71,11 @@
   `app.exit()`, `Me` → `self`, `TextBox1` → `self.text_box1`, `Dim` → `let`,
   `True` → `true`, `Nothing` → `None`, `Console.WriteLine` → `println!`.
   These habits are underlined as you type, with a 💡 quick fix.
+- **rust-analyzer** (optional, `rustup component add rust-analyzer`): live
+  diagnostics, completion on every Rust type and crate, hover information
+  (types and documentation), go to definition (F12 or Ctrl+click), rename
+  (F2). For an untrusted project, build scripts and procedural macros are
+  disabled.
 - **Security**: confirmation before building a project not created by VRS;
   atomic writes; `.bak` copy before any insertion into user code; no change if
   that code does not parse.
@@ -80,9 +86,8 @@
 
 ### Known limitations
 
-- No rust-analyzer/LSP yet: completion covers VRS controls and APIs, keywords
-  and snippets, but not arbitrary types or crates; no go to definition or
-  rename (phase 6).
+- rust-analyzer quick fixes (code actions) are not offered yet; VRS hints and
+  rustc suggestions are.
 - No debugger (phase 7). The Debug menu says so.
 - Panels are resizable but not dockable (egui_dock is not compatible with
   egui 0.37).
@@ -132,7 +137,7 @@
 | 12 | Ouvrir et fermer Form2 | ✅ | `app.show_form(Form2::default())`, `app.show_dialog(…)` (modale), `app.close()`, `app.hide()`, `show_dialog_then` pour récupérer les données, `with_form` pour accéder à une autre fenêtre, plusieurs instances, stratégie de fermeture |
 | 13 | Compiler avec Cargo | ✅ | Compiler, Exécuter, Vérifier, Clippy, Tests, Nettoyer, Arrêter, mode Release |
 | 14 | Exécuter indépendamment de VRS | ✅ | projet Cargo autonome (runtime copié, seule dépendance : eframe) |
-| 15 | Diagnostics Rust et explications | ✅ partiel | diagnostics de `cargo check` (liste, soulignement, infobulle, message original, lien vers la documentation, suggestions de rustc) ; explications pour 17 codes d'erreur et 4 lints ; vérification automatique à l'enregistrement ; suggestions du compilateur applicables en correction rapide. **Pas encore de rust-analyzer.** |
+| 15 | Diagnostics Rust et explications | ✅ partiel | diagnostics de `cargo check` (liste, soulignement, infobulle, message original, lien vers la documentation, suggestions de rustc) ; explications pour 17 codes d'erreur et 4 lints ; diagnostics en direct de rust-analyzer (ou `cargo check` à l'enregistrement) ; suggestions du compilateur applicables en correction rapide |
 
 ### Autres fonctions disponibles
 
@@ -162,6 +167,11 @@
   `self.text_box1`, `Dim` → `let`, `True` → `true`, `Nothing` → `None`,
   `Console.WriteLine` → `println!`. Ces habitudes sont soulignées pendant la
   frappe, avec une correction rapide 💡.
+- **rust-analyzer** (facultatif, `rustup component add rust-analyzer`) :
+  diagnostics en direct, autocomplétion sur tous les types et crates Rust,
+  infobulles (types et documentation), aller à la définition (F12 ou
+  Ctrl+clic), renommage (F2). Pour un projet non approuvé, les scripts de
+  compilation et les macros procédurales sont désactivés.
 - **Sécurité** : confirmation avant de compiler un projet qui n'a pas été créé
   par VRS ; écritures atomiques ; copie `.bak` avant toute insertion dans le
   code utilisateur ; aucune modification si ce code ne s'analyse pas.
@@ -173,10 +183,8 @@
 
 ### Limites connues
 
-- Pas encore de rust-analyzer/LSP : l'autocomplétion couvre les contrôles et
-  les API de VRS, les mots-clés et les extraits, mais pas les types et crates
-  quelconques ; pas de navigation vers les définitions ni de renommage
-  (phase 6).
+- Les corrections rapides de rust-analyzer (code actions) ne sont pas encore
+  proposées ; celles de VRS et de rustc le sont.
 - Pas de débogueur (phase 7). Le menu Débogage l'indique clairement.
 - Panneaux redimensionnables mais non ancrables (egui_dock incompatible avec
   egui 0.37).

@@ -7,6 +7,7 @@ mod actions;
 mod app;
 mod commands;
 mod lang;
+mod lsp;
 mod tabs;
 mod ui;
 

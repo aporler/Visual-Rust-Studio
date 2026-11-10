@@ -80,6 +80,7 @@ crates/
   vrs-codegen     window code generation, handler insertion
   vrs-project     .vrsproj, project templates, file tree
   vrs-compiler    cargo build/run/check/clippy/test/clean, JSON diagnostics
+  vrs-lsp         minimal LSP client for rust-analyzer (JSON-RPC over stdio)
   vrs-editor      code editor (highlighting, search, diagnostics, rustfmt)
   vrs-designer    visual designer (surface, properties, toolbox, undo)
   vrs-app         `vrs` binary: main window, menus, panels, dialogs
@@ -226,6 +227,7 @@ crates/
   vrs-codegen     génération du code des fenêtres, insertion des gestionnaires
   vrs-project     .vrsproj, modèles de projets, arborescence
   vrs-compiler    cargo build/run/check/clippy/test/clean, diagnostics JSON
+  vrs-lsp         client LSP minimal pour rust-analyzer (JSON-RPC sur stdio)
   vrs-editor      éditeur de code (coloration, recherche, diagnostics, rustfmt)
   vrs-designer    concepteur visuel (surface, propriétés, boîte à outils, annuler)
   vrs-app         binaire `vrs` : fenêtre principale, menus, panneaux, dialogues

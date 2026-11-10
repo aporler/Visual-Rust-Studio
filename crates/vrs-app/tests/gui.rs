@@ -17,6 +17,8 @@ use vrs_settings::Settings;
 fn app_in(dir: &Path, lang: &str) -> VrsApp {
     let settings = Settings {
         language: Some(lang.into()),
+        // rust-analyzer est testé séparément (test lent `ide_with_rust_analyzer`).
+        lsp_enabled: false,
         ..Default::default()
     };
     VrsApp::with_settings(settings, Some(dir.join("settings.toml")))
@@ -547,4 +549,82 @@ fn every_component_in_designer_and_properties() {
     for k in ComponentKind::ALL {
         assert!(designer.contains(k.state_type()), "{}", k.state_type());
     }
+}
+
+/// L'IDE avec le vrai rust-analyzer : autocomplétion sur les types Rust,
+/// infobulle, définition et diagnostics en direct.
+/// `cargo test -p vrs-app --test gui -- --ignored ide_with_rust_analyzer`
+#[test]
+#[ignore = "lent : lance rust-analyzer"]
+fn ide_with_rust_analyzer() {
+    use std::time::{Duration, Instant};
+    let dir = tempfile::tempdir().unwrap();
+    let mut app = app_in(dir.path(), "fr-CA");
+    app.settings.lsp_enabled = true;
+    let mut h = harness(app);
+    h.state_mut()
+        .create_project(ProjectKind::Gui, dir.path(), "Ra");
+    h.step();
+    h.state_mut()
+        .active_designer()
+        .unwrap()
+        .add_control(ComponentKind::TextBox, 8.0, 8.0);
+    // rust-analyzer affiche un indicateur animé : avancer image par image.
+    h.state_mut().cmd(Command::OpenHandler(HandlerRequest {
+        control: None,
+        event: EventKind::Load,
+    }));
+    h.step();
+    h.step();
+    assert!(h.state().lsp.is_some(), "rust-analyzer non démarré");
+    let step_until = |h: &mut Harness<'static, VrsApp>, secs: u64, f: &dyn Fn(&VrsApp) -> bool| {
+        let deadline = Instant::now() + Duration::from_secs(secs);
+        while Instant::now() < deadline {
+            h.step();
+            if f(h.state()) {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+        false
+    };
+    // Autocomplétion sur un type Rust : méthodes de String via rust-analyzer.
+    {
+        let app = h.state_mut();
+        let Some(Tab::Code(e)) = app.active_tab_mut() else {
+            panic!()
+        };
+        e.text = e.text.replace(
+            "// À FAIRE : écrivez votre code ici.",
+            "let mot = String::new();\n        mot.",
+        );
+        let c = e.text[..e.text.find("mot.").unwrap() + 4].chars().count();
+        e.set_cursor(c);
+    }
+    h.step();
+    // La première demande peut arriver pendant l'indexation : redemander
+    // régulièrement, comme le ferait l'utilisateur avec Ctrl+Espace.
+    let mut found = false;
+    for _ in 0..30 {
+        {
+            let app = h.state_mut();
+            let Some(Tab::Code(e)) = app.active_tab_mut() else {
+                panic!()
+            };
+            e.trigger_completion();
+        }
+        found = step_until(&mut h, 10, &|app| {
+            let Some(Tab::Code(e)) = app.active_tab() else {
+                return false;
+            };
+            e.completion_items()
+                .1
+                .iter()
+                .any(|i| i.label.starts_with("push_str"))
+        });
+        if found {
+            break;
+        }
+    }
+    assert!(found, "pas de propositions de rust-analyzer");
 }

@@ -4223,6 +4223,7 @@ dependencies = [
  "env_logger",
  "log",
  "rfd",
+ "serde_json",
  "sys-locale",
  "tempfile",
  "vrs-codegen",
@@ -4232,6 +4233,7 @@ dependencies = [
  "vrs-designer",
  "vrs-editor",
  "vrs-i18n",
+ "vrs-lsp",
  "vrs-project",
  "vrs-settings",
 ]
@@ -4311,6 +4313,15 @@ dependencies = [
  "log",
  "tempfile",
  "unic-langid",
+]
+
+[[package]]
+name = "vrs-lsp"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]

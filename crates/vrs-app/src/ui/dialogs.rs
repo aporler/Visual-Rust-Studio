@@ -245,6 +245,10 @@ fn settings(app: &mut VrsApp, ctx: &egui::Context) {
                     &mut app.settings.check_on_save,
                     app.i18n.tr("settings-check-on-save"),
                 );
+                ui.checkbox(&mut app.settings.lsp_enabled, app.i18n.tr("settings-lsp"));
+                if crate::lsp::find_rust_analyzer().is_none() {
+                    ui.weak(app.i18n.tr("settings-lsp-missing"));
+                }
                 ui.separator();
 
                 // --- Concepteur ------------------------------------------------
@@ -322,6 +326,13 @@ fn settings(app: &mut VrsApp, ctx: &egui::Context) {
             app.settings.build.cargo_path = (!p.is_empty()).then(|| PathBuf::from(p));
             app.settings = app.settings.clone().sanitized();
             app.save_settings();
+            if app.settings.lsp_enabled != dlg.original.lsp_enabled {
+                if app.settings.lsp_enabled {
+                    app.start_lsp();
+                } else {
+                    app.stop_lsp();
+                }
+            }
         } else {
             let lang_before = dlg.original.language.clone();
             app.settings = dlg.original.clone();

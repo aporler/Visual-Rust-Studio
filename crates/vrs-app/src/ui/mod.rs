@@ -102,6 +102,14 @@ pub fn status_bar(app: &mut VrsApp, ui: &mut egui::Ui) {
             ui.spinner();
         }
         ui.label(&app.status);
+        if let Some(c) = &app.lsp {
+            let tasks = c.progress();
+            if let Some(t) = tasks.first() {
+                ui.separator();
+                ui.spinner();
+                ui.weak(format!("rust-analyzer : {t}"));
+            }
+        }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.label(app.i18n.active().to_string());
             ui.separator();

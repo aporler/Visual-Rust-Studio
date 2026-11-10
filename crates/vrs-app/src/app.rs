@@ -80,6 +80,11 @@ pub struct VrsApp {
     pub tabs: Vec<Tab>,
     pub active: usize,
     pub build: Option<BuildHandle>,
+    /// rust-analyzer (diagnostics en direct, autocomplétion, définitions).
+    pub lsp: Option<vrs_lsp::LspClient>,
+    pub lsp_pending: Vec<(i64, crate::lsp::Pending)>,
+    pub lsp_generation: u64,
+    pub lsp_synced: std::collections::HashSet<PathBuf>,
     /// La commande en cours est une vérification automatique (silencieuse).
     pub build_quiet: bool,
     /// Diagnostics reçus pendant une vérification automatique.
@@ -139,6 +144,10 @@ impl VrsApp {
             tabs: vec![Tab::Start],
             active: 0,
             build: None,
+            lsp: None,
+            lsp_pending: Vec::new(),
+            lsp_generation: u64::MAX,
+            lsp_synced: Default::default(),
             build_quiet: false,
             pending_diagnostics: Vec::new(),
             console: Vec::new(),
@@ -261,6 +270,7 @@ impl VrsApp {
             self.applied_theme = Some(style_key);
         }
         self.poll_build();
+        self.poll_lsp();
         self.update_title(&ctx);
         self.handle_close_request(&ctx);
         crate::ui::shortcuts(self, &ctx);
@@ -332,6 +342,7 @@ impl VrsApp {
         if let Some(b) = &self.build {
             b.kill();
         }
+        self.stop_lsp();
         self.save_settings();
     }
 }
