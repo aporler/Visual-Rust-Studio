@@ -1,0 +1,21 @@
+[package]
+name = "vrs-settings"
+description = "Visual Rust Studio — paramètres de l'IDE"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vrs-core.workspace = true
+serde.workspace = true
+toml.workspace = true
+directories.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

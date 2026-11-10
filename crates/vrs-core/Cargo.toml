@@ -1,0 +1,16 @@
+[package]
+name = "vrs-core"
+description = "Visual Rust Studio — utilitaires partagés (fichiers atomiques, identifiants Rust)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

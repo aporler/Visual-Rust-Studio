@@ -1,0 +1,19 @@
+[package]
+name = "vrs-compiler"
+description = "Visual Rust Studio — intégration de Cargo (build, run, check, diagnostics)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

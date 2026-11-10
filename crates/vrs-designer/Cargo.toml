@@ -1,0 +1,22 @@
+[package]
+name = "vrs-designer"
+description = "Visual Rust Studio — concepteur visuel de fenêtres (RAD)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vrs-components.workspace = true
+vrs-runtime.workspace = true
+vrs-i18n.workspace = true
+vrs-settings.workspace = true
+egui.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+egui_kittest.workspace = true
+
+[lints]
+workspace = true

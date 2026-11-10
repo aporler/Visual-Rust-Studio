@@ -1,0 +1,22 @@
+[package]
+name = "vrs-codegen"
+description = "Visual Rust Studio — génération de code Rust à partir des fenêtres conçues"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vrs-core.workspace = true
+vrs-components.workspace = true
+syn.workspace = true
+quote.workspace = true
+proc-macro2.workspace = true
+prettyplease.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

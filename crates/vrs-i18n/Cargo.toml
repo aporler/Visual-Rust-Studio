@@ -1,0 +1,21 @@
+[package]
+name = "vrs-i18n"
+description = "Visual Rust Studio — système multilingue basé sur Fluent"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+fluent-bundle.workspace = true
+fluent-syntax.workspace = true
+fluent-langneg.workspace = true
+unic-langid.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

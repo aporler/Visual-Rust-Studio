@@ -1,0 +1,21 @@
+[package]
+name = "vrs-editor"
+description = "Visual Rust Studio — éditeur de code Rust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vrs-core.workspace = true
+vrs-i18n.workspace = true
+egui.workspace = true
+egui_extras.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+egui_kittest.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,36 @@
+[package]
+name = "vrs-app"
+description = "Visual Rust Studio — environnement de développement visuel pour Rust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "vrs"
+path = "src/main.rs"
+
+[dependencies]
+vrs-core.workspace = true
+vrs-i18n.workspace = true
+vrs-settings.workspace = true
+vrs-project.workspace = true
+vrs-components.workspace = true
+vrs-designer.workspace = true
+vrs-codegen.workspace = true
+vrs-compiler.workspace = true
+vrs-editor.workspace = true
+eframe.workspace = true
+egui.workspace = true
+rfd.workspace = true
+log.workspace = true
+env_logger.workspace = true
+sys-locale.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+egui_kittest.workspace = true
+
+[lints]
+workspace = true

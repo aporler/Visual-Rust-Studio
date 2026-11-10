@@ -1,0 +1,53 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-only"
+authors = ["Visual Rust Studio contributors"]
+repository = "https://github.com/aporler/Visual-Rust-Studio"
+rust-version = "1.95"
+
+[workspace.dependencies]
+vrs-core = { path = "crates/vrs-core" }
+vrs-i18n = { path = "crates/vrs-i18n" }
+vrs-runtime = { path = "crates/vrs-runtime" }
+vrs-settings = { path = "crates/vrs-settings" }
+vrs-project = { path = "crates/vrs-project" }
+vrs-components = { path = "crates/vrs-components" }
+vrs-designer = { path = "crates/vrs-designer" }
+vrs-codegen = { path = "crates/vrs-codegen" }
+vrs-compiler = { path = "crates/vrs-compiler" }
+vrs-editor = { path = "crates/vrs-editor" }
+
+eframe = "0.37"
+egui = { version = "0.37", features = ["default_fonts", "monochrome_emoji_fonts"] }
+egui_kittest = "0.37"
+egui_extras = { version = "0.37", features = ["syntect"] }
+fluent-bundle = "0.16"
+fluent-syntax = "0.12"
+fluent-langneg = "0.13"
+unic-langid = { version = "0.9", features = ["macros"] }
+sys-locale = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+ron = "0.11"
+directories = "6"
+rfd = "0.16"
+log = "0.4"
+env_logger = "0.11"
+thiserror = "2"
+syn = { version = "2", features = ["full", "visit"] }
+quote = "1"
+proc-macro2 = { version = "1", features = ["span-locations"] }
+prettyplease = "0.2"
+tempfile = "3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[profile.dev.package."*"]
+opt-level = 2

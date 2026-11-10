@@ -1,0 +1,19 @@
+[package]
+name = "vrs-components"
+description = "Visual Rust Studio — composants et modèle déclaratif des fenêtres"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vrs-core.workspace = true
+serde.workspace = true
+ron.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

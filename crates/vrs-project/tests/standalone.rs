@@ -1,0 +1,102 @@
+//! Test d'intégration clé : un projet créé par VRS compile **sans VRS**.
+//!
+//! Le projet est généré dans un dossier temporaire (hors du workspace VRS), un
+//! bouton, une zone de texte et un gestionnaire Click y sont ajoutés comme le
+//! ferait le concepteur, puis `cargo build` est lancé.
+//!
+//! Ces tests téléchargent/compilent eframe : ils sont ignorés par défaut.
+//! Lancer avec : `cargo test -p vrs-project --test standalone -- --ignored --nocapture`
+
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use vrs_codegen::EnglishComments;
+use vrs_components::{ComponentKind, EventKind};
+use vrs_project::{ProjectKind, create_project, open_project};
+
+fn cargo() -> PathBuf {
+    std::env::var_os("CARGO")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| "cargo".into())
+}
+
+/// Répertoire cible partagé pour ne compiler eframe qu'une fois.
+fn shared_target() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/standalone-test")
+}
+
+fn build(root: &Path) -> (bool, String) {
+    let out = Command::new(cargo())
+        .arg("build")
+        .current_dir(root)
+        .env("CARGO_TARGET_DIR", shared_target())
+        .env_remove("RUSTFLAGS")
+        .output()
+        .expect("lancement de cargo");
+    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+    (out.status.success(), stderr)
+}
+
+#[test]
+#[ignore = "lent : compile eframe"]
+fn gui_project_compiles_without_vrs() {
+    let dir = tempfile::tempdir().unwrap();
+    let project =
+        create_project(dir.path(), "DemoApp", ProjectKind::Gui, &EnglishComments).unwrap();
+
+    // Ce que fait l'utilisateur dans le concepteur.
+    let mut form = project.load_form("Form1").unwrap();
+    form.title = "Démo VRS".into();
+    let button = form.add_control(ComponentKind::Button, 16.0, 16.0);
+    let text_box = form.add_control(ComponentKind::TextBox, 16.0, 56.0);
+    form.add_control(ComponentKind::Label, 16.0, 96.0);
+    form.control_mut(&button).unwrap().text = "Dire bonjour".into();
+    // Double-clic sur le bouton : création du gestionnaire Click.
+    form.control_mut(&button)
+        .unwrap()
+        .events
+        .insert(EventKind::Click, EventKind::Click.default_handler(&button));
+    form.save(&project.form_path("Form1")).unwrap();
+
+    // Enregistrement et réouverture du projet, puis génération du code.
+    let project = open_project(&project.root).unwrap();
+    let report = project.sync_code(&[], &EnglishComments).unwrap();
+    assert_eq!(report.handlers_added, vec!["button1_click".to_string()]);
+
+    // L'utilisateur écrit son code dans le gestionnaire.
+    let user = project.root.join("src/forms/form1.rs");
+    let src = std::fs::read_to_string(&user).unwrap();
+    let src = src.replace(
+        "// TODO: write your code here.",
+        &format!("self.{text_box}.text = String::from(\"Bonjour depuis Rust !\");"),
+    );
+    std::fs::write(&user, &src).unwrap();
+
+    // Ajout de Form2 (conception seulement pour l'instant).
+    let mut project = open_project(&project.root).unwrap();
+    project.add_form("Form2", &EnglishComments).unwrap();
+    // Le code utilisateur n'a pas été touché.
+    assert_eq!(std::fs::read_to_string(&user).unwrap(), src);
+
+    let (ok, stderr) = build(&project.root);
+    assert!(ok, "échec de compilation :\n{stderr}");
+    let own_warnings: Vec<&str> = stderr
+        .lines()
+        .filter(|l| l.starts_with("warning") && !l.contains("generated"))
+        .collect();
+    assert!(own_warnings.is_empty(), "avertissements :\n{stderr}");
+}
+
+#[test]
+#[ignore = "lent : lance cargo"]
+fn console_and_library_projects_compile() {
+    let dir = tempfile::tempdir().unwrap();
+    for (name, kind) in [
+        ("cli", ProjectKind::Console),
+        ("lib1", ProjectKind::Library),
+    ] {
+        let p = create_project(dir.path(), name, kind, &EnglishComments).unwrap();
+        let (ok, stderr) = build(&p.root);
+        assert!(ok, "{name} : {stderr}");
+    }
+}
