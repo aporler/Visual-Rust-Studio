@@ -66,10 +66,17 @@ fn render_control(ui: &mut egui::Ui, c: &mut Control) -> egui::Response {
     use vrs_runtime as rt;
     let b = bounds(c);
     let name = c.name.clone();
+    let color = |v: Option<[u8; 4]>| {
+        v.map(|[r, g, b, a]| egui::Color32::from_rgba_unmultiplied(r, g, b, a))
+    };
+    let (back, fore, font) = (color(c.back_color), color(c.fore_color), c.font_size);
     macro_rules! state {
         ($t:ident) => {{
             let mut s = rt::$t::new(c.text.clone(), b);
             s.enabled = c.enabled;
+            s.back_color = back;
+            s.fore_color = fore;
+            s.font_size = font;
             s
         }};
     }

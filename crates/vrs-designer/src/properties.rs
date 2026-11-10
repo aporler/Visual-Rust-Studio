@@ -12,6 +12,28 @@ fn row(ui: &mut egui::Ui, label: String, add: impl FnOnce(&mut egui::Ui)) {
     ui.end_row();
 }
 
+/// Couleur facultative : case « personnalisée » + sélecteur.
+fn color_row(ui: &mut egui::Ui, value: &mut Option<[u8; 4]>, i18n: &I18n) {
+    let mut custom = value.is_some();
+    if ui.checkbox(&mut custom, "").changed() {
+        *value = custom.then_some([0, 120, 215, 255]);
+    }
+    if let Some(rgba) = value {
+        let mut c = egui::Color32::from_rgba_unmultiplied(rgba[0], rgba[1], rgba[2], rgba[3]);
+        if egui::color_picker::color_edit_button_srgba(
+            ui,
+            &mut c,
+            egui::color_picker::Alpha::Opaque,
+        )
+        .changed()
+        {
+            *rgba = c.to_srgba_unmultiplied();
+        }
+    } else {
+        ui.weak(i18n.tr("prop-default"));
+    }
+}
+
 fn num(ui: &mut egui::Ui, v: &mut f32, min: f32) {
     ui.add(
         DragValue::new(v)
@@ -226,12 +248,39 @@ fn control_properties(
             row(ui, i18n.tr("prop-tooltip"), |ui| {
                 ui.text_edit_singleline(&mut c.tooltip);
             });
+            row(ui, i18n.tr("prop-back-color"), |ui| {
+                color_row(ui, &mut c.back_color, i18n)
+            });
+            row(ui, i18n.tr("prop-fore-color"), |ui| {
+                color_row(ui, &mut c.fore_color, i18n)
+            });
+            row(ui, i18n.tr("prop-font-size"), |ui| {
+                let mut custom = c.font_size.is_some();
+                if ui.checkbox(&mut custom, "").changed() {
+                    c.font_size = custom.then_some(14.0);
+                }
+                if let Some(s) = &mut c.font_size {
+                    ui.add(DragValue::new(s).range(6.0..=96.0).speed(0.5));
+                } else {
+                    ui.weak(i18n.tr("prop-default"));
+                }
+            });
             ui.label(RichText::new(i18n.tr("prop-group-layout")).strong());
             ui.end_row();
             row(ui, i18n.tr("prop-x"), |ui| num(ui, &mut c.x, -1000.0));
             row(ui, i18n.tr("prop-y"), |ui| num(ui, &mut c.y, -1000.0));
             row(ui, i18n.tr("prop-width"), |ui| num(ui, &mut c.width, 8.0));
             row(ui, i18n.tr("prop-height"), |ui| num(ui, &mut c.height, 8.0));
+            row(ui, i18n.tr("prop-anchor"), |ui| {
+                ui.horizontal(|ui| {
+                    ui.toggle_value(&mut c.anchor.left, i18n.tr("anchor-left"));
+                    ui.toggle_value(&mut c.anchor.top, i18n.tr("anchor-top"));
+                    ui.toggle_value(&mut c.anchor.right, i18n.tr("anchor-right"));
+                    ui.toggle_value(&mut c.anchor.bottom, i18n.tr("anchor-bottom"));
+                })
+                .response
+                .on_hover_text(i18n.tr("prop-anchor-hint"));
+            });
             ui.label(RichText::new(i18n.tr("prop-group-behavior")).strong());
             ui.end_row();
             row(ui, i18n.tr("prop-visible"), |ui| {

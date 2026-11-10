@@ -86,3 +86,14 @@ prop-selected = Élément sélectionné
 prop-minimum = Minimum
 prop-maximum = Maximum
 prop-value = Valeur (Value)
+
+prop-back-color = Couleur de fond (BackColor)
+prop-fore-color = Couleur du texte (ForeColor)
+prop-font-size = Taille de police
+prop-default = (par défaut)
+prop-anchor = Ancrage (Anchor)
+prop-anchor-hint = Côtés de la fenêtre auxquels le contrôle reste attaché quand la fenêtre est redimensionnée. Gauche + droite : il s'élargit ; droite seulement : il se déplace.
+anchor-left = Gauche
+anchor-top = Haut
+anchor-right = Droite
+anchor-bottom = Bas

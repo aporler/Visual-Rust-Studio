@@ -54,6 +54,27 @@ fn state_init(c: &Control) -> TokenStream {
         let (v, min, max) = (f32_lit(c.value), f32_lit(c.minimum), f32_lit(c.maximum));
         extra.push(quote!(value: #v, minimum: #min, maximum: #max,));
     }
+    let color = |c: Option<[u8; 4]>| match c {
+        Some([r, g, b, 255]) => quote!(Some(vrs::Color::from_rgb(#r, #g, #b))),
+        Some([r, g, b, a]) => quote!(Some(vrs::Color::from_rgba_unmultiplied(#r, #g, #b, #a))),
+        None => quote!(None),
+    };
+    let back = color(c.back_color);
+    let fore = color(c.fore_color);
+    let font = match c.font_size {
+        Some(s) => {
+            let s = f32_lit(s);
+            quote!(Some(#s))
+        }
+        None => quote!(None),
+    };
+    let a = c.anchor;
+    let anchor = if a == vrs_components::Anchor::default() {
+        quote!(vrs::Anchor::TOP_LEFT)
+    } else {
+        let (l, t, r, b) = (a.left, a.top, a.right, a.bottom);
+        quote!(vrs::Anchor::new(#l, #t, #r, #b))
+    };
     quote! {
         vrs::#ty {
             text: #text,
@@ -61,6 +82,10 @@ fn state_init(c: &Control) -> TokenStream {
             visible: #visible,
             enabled: #enabled,
             tooltip: #tooltip,
+            back_color: #back,
+            fore_color: #fore,
+            font_size: #font,
+            anchor: #anchor,
             #(#extra)*
         }
     }
@@ -157,6 +182,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
     } else {
         ident("_app")
     };
+    let layout_call = (!form.controls.is_empty()).then(|| quote!(vrs::layout(ui, [#w, #h]);));
     let ui_param = if form.controls.is_empty() {
         ident("_ui")
     } else {
@@ -222,6 +248,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
 
             #[doc = #show_doc]
             fn show(&mut self, #ui_param: &mut egui::Ui, #app_param: &mut AppContext) {
+                #layout_call
                 #(#draws)*
                 #(#exclusive)*
                 #(#dispatch)*

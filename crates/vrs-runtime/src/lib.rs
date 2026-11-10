@@ -56,6 +56,81 @@ impl Bounds {
     }
 }
 
+/// Couleur (rouge, vert, bleu, opacité) : `vrs::Color::from_rgb(200, 30, 30)`.
+pub type Color = egui::Color32;
+
+/// Côtés de la fenêtre auxquels un contrôle reste attaché quand la fenêtre est
+/// redimensionnée (propriété Anchor de Windows Forms). Attaché à gauche et à
+/// droite, le contrôle s'élargit ; seulement à droite, il se déplace.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Anchor {
+    pub left: bool,
+    pub top: bool,
+    pub right: bool,
+    pub bottom: bool,
+}
+
+impl Anchor {
+    /// Attaché en haut à gauche (par défaut).
+    pub const TOP_LEFT: Anchor = Anchor::new(true, true, false, false);
+
+    pub const fn new(left: bool, top: bool, right: bool, bottom: bool) -> Self {
+        Self {
+            left,
+            top,
+            right,
+            bottom,
+        }
+    }
+}
+
+impl Default for Anchor {
+    fn default() -> Self {
+        Self::TOP_LEFT
+    }
+}
+
+/// Indique la taille de conception de la fenêtre (appelé au début de `show`),
+/// pour que les contrôles ancrés suivent le redimensionnement.
+pub fn layout(ui: &mut egui::Ui, design_size: [f32; 2]) {
+    let key = ui.scope_id().with("vrs-design-size");
+    ui.data_mut(|d| d.insert_temp(key, design_size));
+}
+
+/// Rectangle à l'écran d'un contrôle, en tenant compte de son ancrage.
+fn anchored_rect(ui: &egui::Ui, bounds: Bounds, anchor: Anchor) -> egui::Rect {
+    let area = ui.max_rect();
+    let key = ui.scope_id().with("vrs-design-size");
+    let design = ui.data(|d| d.get_temp::<[f32; 2]>(key));
+    let (dx, dy) = design.map_or((0.0, 0.0), |d| (area.width() - d[0], area.height() - d[1]));
+    let mut b = bounds;
+    match (anchor.left, anchor.right) {
+        (true, true) => b.width = (b.width + dx).max(1.0),
+        (false, true) => b.x += dx,
+        (false, false) => b.x += dx / 2.0,
+        (true, false) => {}
+    }
+    match (anchor.top, anchor.bottom) {
+        (true, true) => b.height = (b.height + dy).max(1.0),
+        (false, true) => b.y += dy,
+        (false, false) => b.y += dy / 2.0,
+        (true, false) => {}
+    }
+    b.to_rect(area.min)
+}
+
+/// Texte avec couleur et taille éventuelles.
+fn rich(text: &str, fore: Option<Color>, size: Option<f32>) -> egui::RichText {
+    let mut t = egui::RichText::new(text);
+    if let Some(c) = fore {
+        t = t.color(c);
+    }
+    if let Some(s) = size {
+        t = t.size(s);
+    }
+    t
+}
+
 /// État d'un bouton (équivalent de `Button` en Windows Forms).
 #[derive(Clone, Debug, PartialEq)]
 pub struct ButtonState {
@@ -64,6 +139,14 @@ pub struct ButtonState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
 }
 
 /// État d'une étiquette (`Label`).
@@ -74,6 +157,14 @@ pub struct LabelState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
 }
 
 /// État d'une zone de texte (`TextBox`).
@@ -84,6 +175,14 @@ pub struct TextBoxState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
 }
 
 /// État d'une case à cocher (`CheckBox`).
@@ -94,6 +193,14 @@ pub struct CheckBoxState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
     pub checked: bool,
 }
 
@@ -106,6 +213,14 @@ pub struct RadioButtonState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
     pub checked: bool,
     pub group: String,
 }
@@ -118,6 +233,14 @@ pub struct ComboBoxState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
     pub items: Vec<String>,
     pub selected: Option<usize>,
 }
@@ -130,6 +253,14 @@ pub struct ListBoxState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
     pub items: Vec<String>,
     pub selected: Option<usize>,
 }
@@ -142,6 +273,14 @@ pub struct ProgressBarState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
     pub value: f32,
     pub minimum: f32,
     pub maximum: f32,
@@ -155,6 +294,14 @@ pub struct SliderState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
     pub value: f32,
     pub minimum: f32,
     pub maximum: f32,
@@ -168,6 +315,14 @@ pub struct GroupBoxState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
 }
 
 /// État d'un panneau (`Panel`).
@@ -178,6 +333,14 @@ pub struct PanelState {
     pub visible: bool,
     pub enabled: bool,
     pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
 }
 
 macro_rules! impl_state_new {
@@ -191,6 +354,10 @@ macro_rules! impl_state_new {
                     visible: true,
                     enabled: true,
                     tooltip: String::new(),
+                    back_color: None,
+                    fore_color: None,
+                    font_size: None,
+                    anchor: Anchor::TOP_LEFT,
                     $($f: $v,)*
                 }
             }
@@ -246,16 +413,27 @@ impl ListBoxState {
     }
 }
 
-/// Dessine un contenu dans le rectangle `bounds`, avec l'état activé/désactivé.
+/// Style commun passé aux fonctions de dessin.
+struct Look {
+    bounds: Bounds,
+    anchor: Anchor,
+    enabled: bool,
+    back: Option<Color>,
+}
+
+/// Dessine un contenu dans le rectangle du contrôle, avec l'état
+/// activé/désactivé et la couleur de fond éventuelle.
 fn place(
     ui: &mut egui::Ui,
     id_salt: &str,
-    bounds: Bounds,
-    enabled: bool,
+    look: Look,
     layout: egui::Layout,
     add: impl FnOnce(&mut egui::Ui) -> egui::Response,
 ) -> egui::Response {
-    let rect = bounds.to_rect(ui.max_rect().min);
+    let rect = anchored_rect(ui, look.bounds, look.anchor);
+    if let Some(c) = look.back {
+        ui.painter().rect_filled(rect, 2.0, c);
+    }
     ui.scope_builder(
         egui::UiBuilder::new()
             .id_salt(id_salt)
@@ -263,13 +441,32 @@ fn place(
             .layout(layout),
         |ui| {
             ui.set_clip_rect(rect.intersect(ui.clip_rect()));
-            if !enabled {
+            if !look.enabled {
                 ui.disable();
             }
             add(ui)
         },
     )
     .inner
+}
+
+macro_rules! look {
+    ($s:expr) => {
+        Look {
+            bounds: $s.bounds,
+            anchor: $s.anchor,
+            enabled: $s.enabled,
+            back: $s.back_color,
+        }
+    };
+    ($s:expr, no_back) => {
+        Look {
+            bounds: $s.bounds,
+            anchor: $s.anchor,
+            enabled: $s.enabled,
+            back: None,
+        }
+    };
 }
 
 /// Réponse vide pour un contrôle masqué (jamais cliqué, jamais modifié).
@@ -299,10 +496,15 @@ pub fn button(ui: &mut egui::Ui, id_salt: &str, state: &ButtonState) -> egui::Re
     let r = place(
         ui,
         id_salt,
-        state.bounds,
-        state.enabled,
+        look!(state, no_back),
         egui::Layout::centered_and_justified(egui::Direction::TopDown),
-        |ui| ui.add(egui::Button::new(state.text.as_str())),
+        |ui| {
+            let mut b = egui::Button::new(rich(&state.text, state.fore_color, state.font_size));
+            if let Some(c) = state.back_color {
+                b = b.fill(c);
+            }
+            ui.add(b)
+        },
     );
     with_tooltip(r, &state.tooltip)
 }
@@ -315,12 +517,11 @@ pub fn label(ui: &mut egui::Ui, id_salt: &str, state: &LabelState) -> egui::Resp
     let r = place(
         ui,
         id_salt,
-        state.bounds,
-        state.enabled,
+        look!(state),
         egui::Layout::left_to_right(egui::Align::Center),
         |ui| {
             ui.add(
-                egui::Label::new(state.text.as_str())
+                egui::Label::new(rich(&state.text, state.fore_color, state.font_size))
                     .selectable(false)
                     .sense(egui::Sense::click()),
             )
@@ -334,28 +535,28 @@ pub fn text_box(ui: &mut egui::Ui, id_salt: &str, state: &mut TextBoxState) -> e
     if !state.visible {
         return hidden(ui, id_salt);
     }
-    let TextBoxState {
-        text,
-        bounds,
-        enabled,
-        tooltip,
-        ..
-    } = state;
+    let look = look!(state, no_back);
+    let (back, fore, size) = (state.back_color, state.fore_color, state.font_size);
     let r = place(
         ui,
         id_salt,
-        *bounds,
-        *enabled,
+        look,
         egui::Layout::centered_and_justified(egui::Direction::TopDown),
         |ui| {
-            ui.add(
-                egui::TextEdit::singleline(text)
-                    .id_salt(id_salt)
-                    .desired_width(f32::INFINITY),
-            )
+            let mut t = egui::TextEdit::singleline(&mut state.text)
+                .id_salt(id_salt)
+                .desired_width(f32::INFINITY)
+                .text_color_opt(fore);
+            if let Some(c) = back {
+                t = t.background_color(c);
+            }
+            if let Some(s) = size {
+                t = t.font(egui::FontId::proportional(s));
+            }
+            ui.add(t)
         },
     );
-    with_tooltip(r, tooltip)
+    with_tooltip(r, &state.tooltip)
 }
 
 /// Dessine une case à cocher. `response.changed()` indique un changement.
@@ -363,23 +564,16 @@ pub fn check_box(ui: &mut egui::Ui, id_salt: &str, state: &mut CheckBoxState) ->
     if !state.visible {
         return hidden(ui, id_salt);
     }
-    let CheckBoxState {
-        text,
-        bounds,
-        enabled,
-        tooltip,
-        checked,
-        ..
-    } = state;
+    let look = look!(state);
+    let text = rich(&state.text, state.fore_color, state.font_size);
     let r = place(
         ui,
         id_salt,
-        *bounds,
-        *enabled,
+        look,
         egui::Layout::left_to_right(egui::Align::Center),
-        |ui| ui.checkbox(checked, text.as_str()),
+        |ui| ui.checkbox(&mut state.checked, text),
     );
-    with_tooltip(r, tooltip)
+    with_tooltip(r, &state.tooltip)
 }
 
 /// Dessine un bouton d'option. `response.changed()` indique qu'il vient d'être coché.
@@ -391,22 +585,16 @@ pub fn radio_button(
     if !state.visible {
         return hidden(ui, id_salt);
     }
-    let RadioButtonState {
-        text,
-        bounds,
-        enabled,
-        tooltip,
-        checked,
-        ..
-    } = state;
+    let look = look!(state);
+    let text = rich(&state.text, state.fore_color, state.font_size);
+    let checked = &mut state.checked;
     let r = place(
         ui,
         id_salt,
-        *bounds,
-        *enabled,
+        look,
         egui::Layout::left_to_right(egui::Align::Center),
         |ui| {
-            let mut r = ui.radio(*checked, text.as_str());
+            let mut r = ui.radio(*checked, text);
             if r.clicked() && !*checked {
                 *checked = true;
                 r.mark_changed();
@@ -414,7 +602,7 @@ pub fn radio_button(
             r
         },
     );
-    with_tooltip(r, tooltip)
+    with_tooltip(r, &state.tooltip)
 }
 
 /// Dessine une liste déroulante. `response.changed()` indique une nouvelle sélection.
@@ -422,22 +610,20 @@ pub fn combo_box(ui: &mut egui::Ui, id_salt: &str, state: &mut ComboBoxState) ->
     if !state.visible {
         return hidden(ui, id_salt);
     }
+    let look = look!(state);
+    let before = state.selected;
+    let width = state.bounds.width;
+    let (fore, size) = (state.fore_color, state.font_size);
     let ComboBoxState {
         text,
-        bounds,
-        enabled,
-        tooltip,
         items,
         selected,
         ..
     } = state;
-    let before = *selected;
-    let width = bounds.width;
     let mut r = place(
         ui,
         id_salt,
-        *bounds,
-        *enabled,
+        look,
         egui::Layout::left_to_right(egui::Align::Center),
         |ui| {
             let shown = selected
@@ -446,19 +632,19 @@ pub fn combo_box(ui: &mut egui::Ui, id_salt: &str, state: &mut ComboBoxState) ->
                 .unwrap_or_else(|| text.clone());
             egui::ComboBox::from_id_salt(id_salt)
                 .width(width - 8.0)
-                .selected_text(shown)
+                .selected_text(rich(&shown, fore, size))
                 .show_ui(ui, |ui| {
                     for (i, item) in items.iter().enumerate() {
-                        ui.selectable_value(selected, Some(i), item.as_str());
+                        ui.selectable_value(selected, Some(i), rich(item, fore, size));
                     }
                 })
                 .response
         },
     );
-    if *selected != before {
+    if state.selected != before {
         r.mark_changed();
     }
-    with_tooltip(r, tooltip)
+    with_tooltip(r, &state.tooltip)
 }
 
 /// Dessine une liste. `response.changed()` indique une nouvelle sélection.
@@ -466,20 +652,16 @@ pub fn list_box(ui: &mut egui::Ui, id_salt: &str, state: &mut ListBoxState) -> e
     if !state.visible {
         return hidden(ui, id_salt);
     }
+    let look = look!(state);
+    let before = state.selected;
+    let (fore, size) = (state.fore_color, state.font_size);
     let ListBoxState {
-        bounds,
-        enabled,
-        tooltip,
-        items,
-        selected,
-        ..
+        items, selected, ..
     } = state;
-    let before = *selected;
     let mut r = place(
         ui,
         id_salt,
-        *bounds,
-        *enabled,
+        look,
         egui::Layout::top_down_justified(egui::Align::Min),
         |ui| {
             egui::Frame::group(ui.style())
@@ -492,7 +674,7 @@ pub fn list_box(ui: &mut egui::Ui, id_salt: &str, state: &mut ListBoxState) -> e
                         .show(ui, |ui| {
                             for (i, item) in items.iter().enumerate() {
                                 if ui
-                                    .selectable_label(*selected == Some(i), item.as_str())
+                                    .selectable_label(*selected == Some(i), rich(item, fore, size))
                                     .clicked()
                                 {
                                     *selected = Some(i);
@@ -503,13 +685,13 @@ pub fn list_box(ui: &mut egui::Ui, id_salt: &str, state: &mut ListBoxState) -> e
                 .response
         },
     );
-    if *selected != before {
+    if state.selected != before {
         r.mark_changed();
     }
-    with_tooltip(r, tooltip)
+    with_tooltip(r, &state.tooltip)
 }
 
-/// Dessine une barre de progression.
+/// Dessine une barre de progression (ForeColor : couleur de la barre).
 pub fn progress_bar(ui: &mut egui::Ui, id_salt: &str, state: &ProgressBarState) -> egui::Response {
     if !state.visible {
         return hidden(ui, id_salt);
@@ -519,16 +701,18 @@ pub fn progress_bar(ui: &mut egui::Ui, id_salt: &str, state: &ProgressBarState) 
     let r = place(
         ui,
         id_salt,
-        state.bounds,
-        state.enabled,
+        look!(state),
         egui::Layout::centered_and_justified(egui::Direction::TopDown),
         |ui| {
-            let bar = egui::ProgressBar::new(fraction);
-            let bar = if state.text.is_empty() {
+            let mut bar = egui::ProgressBar::new(fraction);
+            bar = if state.text.is_empty() {
                 bar.show_percentage()
             } else {
-                bar.text(state.text.as_str())
+                bar.text(rich(&state.text, None, state.font_size))
             };
+            if let Some(c) = state.fore_color {
+                bar = bar.fill(c);
+            }
             ui.add(bar)
         },
     );
@@ -540,28 +724,22 @@ pub fn slider(ui: &mut egui::Ui, id_salt: &str, state: &mut SliderState) -> egui
     if !state.visible {
         return hidden(ui, id_salt);
     }
-    let SliderState {
-        text,
-        bounds,
-        enabled,
-        tooltip,
-        value,
-        minimum,
-        maximum,
-        ..
-    } = state;
+    let look = look!(state);
+    let width = state.bounds.width;
+    let text = rich(&state.text, state.fore_color, state.font_size);
+    let (min, max) = (state.minimum, state.maximum);
+    let value = &mut state.value;
     let r = place(
         ui,
         id_salt,
-        *bounds,
-        *enabled,
+        look,
         egui::Layout::left_to_right(egui::Align::Center),
         |ui| {
-            ui.spacing_mut().slider_width = (bounds.width - 60.0).max(20.0);
-            ui.add(egui::Slider::new(value, *minimum..=*maximum).text(text.as_str()))
+            ui.spacing_mut().slider_width = (width - 60.0).max(20.0);
+            ui.add(egui::Slider::new(value, min..=max).text(text))
         },
     );
-    with_tooltip(r, tooltip)
+    with_tooltip(r, &state.tooltip)
 }
 
 /// Dessine un cadre avec titre.
@@ -569,14 +747,20 @@ pub fn group_box(ui: &mut egui::Ui, id_salt: &str, state: &GroupBoxState) -> egu
     if !state.visible {
         return hidden(ui, id_salt);
     }
-    let rect = state.bounds.to_rect(ui.max_rect().min);
+    let rect = anchored_rect(ui, state.bounds, state.anchor);
     let visuals = ui.visuals().clone();
-    let font = egui::TextStyle::Body.resolve(ui.style());
-    let galley = ui
-        .painter()
-        .layout_no_wrap(state.text.clone(), font, visuals.text_color());
+    let size = state
+        .font_size
+        .unwrap_or_else(|| egui::TextStyle::Body.resolve(ui.style()).size);
+    let color = state.fore_color.unwrap_or(visuals.text_color());
+    let galley =
+        ui.painter()
+            .layout_no_wrap(state.text.clone(), egui::FontId::proportional(size), color);
     let frame =
         egui::Rect::from_min_max(rect.min + egui::vec2(0.0, galley.size().y / 2.0), rect.max);
+    if let Some(c) = state.back_color {
+        ui.painter().rect_filled(frame, 4.0, c);
+    }
     let stroke = visuals.widgets.noninteractive.bg_stroke;
     ui.painter()
         .rect_stroke(frame, 4.0, stroke, egui::StrokeKind::Inside);
@@ -586,8 +770,9 @@ pub fn group_box(ui: &mut egui::Ui, id_salt: &str, state: &GroupBoxState) -> egu
             text_pos - egui::vec2(3.0, 0.0),
             galley.size() + egui::vec2(6.0, 0.0),
         );
-        ui.painter().rect_filled(bg, 0.0, visuals.panel_fill);
-        ui.painter().galley(text_pos, galley, visuals.text_color());
+        ui.painter()
+            .rect_filled(bg, 0.0, state.back_color.unwrap_or(visuals.panel_fill));
+        ui.painter().galley(text_pos, galley, color);
     }
     let r = ui.interact(rect, ui.scope_id().with(id_salt), egui::Sense::hover());
     with_tooltip(r, &state.tooltip)
@@ -598,12 +783,12 @@ pub fn panel(ui: &mut egui::Ui, id_salt: &str, state: &PanelState) -> egui::Resp
     if !state.visible {
         return hidden(ui, id_salt);
     }
-    let rect = state.bounds.to_rect(ui.max_rect().min);
+    let rect = anchored_rect(ui, state.bounds, state.anchor);
     let visuals = ui.visuals();
     ui.painter().rect(
         rect,
         2.0,
-        visuals.faint_bg_color,
+        state.back_color.unwrap_or(visuals.faint_bg_color),
         visuals.widgets.noninteractive.bg_stroke,
         egui::StrokeKind::Inside,
     );
@@ -1479,6 +1664,32 @@ mod tests {
         h.get_by_label("OK").click();
         h.run();
         assert!(h.query_by_label_contains("Bonjour !").is_none());
+    }
+
+    #[test]
+    fn anchors_follow_window_size() {
+        let mut harness = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(500.0, 300.0))
+            .build_ui(|ui| {
+                // Fenêtre conçue en 400 × 200, affichée en 500 × 300.
+                layout(
+                    ui,
+                    [
+                        ui.max_rect().width() - 100.0,
+                        ui.max_rect().height() - 100.0,
+                    ],
+                );
+                let origin = ui.max_rect().min;
+                let b = Bounds::new(10.0, 10.0, 100.0, 20.0);
+                let stretch = anchored_rect(ui, b, Anchor::new(true, true, true, false));
+                let right = anchored_rect(ui, b, Anchor::new(false, false, true, true));
+                assert_eq!(stretch.width(), 200.0);
+                assert_eq!(right.min.x - origin.x, 110.0);
+                assert_eq!(right.min.y - origin.y, 110.0);
+                let fixed = anchored_rect(ui, b, Anchor::TOP_LEFT);
+                assert_eq!(fixed.min - origin, egui::vec2(10.0, 10.0));
+            });
+        harness.run();
     }
 
     #[test]

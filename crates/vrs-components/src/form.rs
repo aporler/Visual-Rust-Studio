@@ -53,6 +53,44 @@ pub struct Control {
     pub minimum: f32,
     #[serde(default = "hundred", skip_serializing_if = "is_hundred")]
     pub maximum: f32,
+    /// Couleur de fond (RVBA), `None` : thème.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub back_color: Option<[u8; 4]>,
+    /// Couleur du texte (RVBA), `None` : thème.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fore_color: Option<[u8; 4]>,
+    /// Taille de police, `None` : par défaut.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f32>,
+    /// Ancrage aux bords de la fenêtre.
+    #[serde(default, skip_serializing_if = "Anchor::is_default")]
+    pub anchor: Anchor,
+}
+
+/// Côtés de la fenêtre auxquels un contrôle reste attaché (Anchor).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Anchor {
+    pub left: bool,
+    pub top: bool,
+    pub right: bool,
+    pub bottom: bool,
+}
+
+impl Default for Anchor {
+    fn default() -> Self {
+        Self {
+            left: true,
+            top: true,
+            right: false,
+            bottom: false,
+        }
+    }
+}
+
+impl Anchor {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 fn yes() -> bool {
@@ -98,6 +136,10 @@ impl Control {
             value: 0.0,
             minimum: 0.0,
             maximum: 100.0,
+            back_color: None,
+            fore_color: None,
+            font_size: None,
+            anchor: Anchor::default(),
         }
     }
 

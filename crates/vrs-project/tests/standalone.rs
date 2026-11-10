@@ -62,6 +62,10 @@ fn gui_project_compiles_without_vrs() {
         c.selected = Some(0);
         c.value = 40.0;
         c.checked = true;
+        c.back_color = Some([240, 240, 255, 255]);
+        c.fore_color = Some([200, 30, 30, 128]);
+        c.font_size = Some(16.0);
+        c.anchor.right = true;
         if let Some(ev) = kind.default_event() {
             c.events.insert(ev, ev.default_handler(&name));
         }

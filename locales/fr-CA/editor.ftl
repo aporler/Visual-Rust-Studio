@@ -75,3 +75,8 @@ api-maximum = Valeur maximale (f32).
 api-app-message-box = Affiche un message dans une boîte modale avec un bouton OK (MsgBox en VB.NET).
 hint-msgbox = Dans Visual Rust Studio, on affiche un message avec `app.message_box("…")` (MsgBox / MessageBox.Show en VB.NET).
 editor-rename = Nouveau nom (Entrée pour renommer partout, Échap pour annuler)
+
+api-back-color = Couleur de fond (`Option<vrs::Color>`), `None` pour la couleur du thème.
+api-fore-color = Couleur du texte (`Option<vrs::Color>`), `None` pour la couleur du thème.
+api-font-size = Taille de la police en points (`Option<f32>`).
+api-anchor = Côtés auxquels le contrôle reste attaché : `vrs::Anchor::new(gauche, haut, droite, bas)`.

@@ -86,3 +86,14 @@ prop-selected = Selected item
 prop-minimum = Minimum
 prop-maximum = Maximum
 prop-value = Value
+
+prop-back-color = BackColor
+prop-fore-color = ForeColor
+prop-font-size = Font size
+prop-default = (default)
+prop-anchor = Anchor
+prop-anchor-hint = Sides of the window the control stays attached to when the window is resized. Left + right: it stretches; right only: it moves.
+anchor-left = Left
+anchor-top = Top
+anchor-right = Right
+anchor-bottom = Bottom

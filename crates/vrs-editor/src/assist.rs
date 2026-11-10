@@ -347,6 +347,25 @@ fn members(path: &str, ctx: &CompletionContext) -> Vec<CompletionItem> {
                 CompletionItem::new("enabled", "enabled", ItemKind::Field, "api-enabled"),
                 CompletionItem::new("tooltip", "tooltip", ItemKind::Field, "api-tooltip"),
                 CompletionItem::new("bounds", "bounds", ItemKind::Field, "api-bounds"),
+                CompletionItem::new(
+                    "back_color",
+                    "back_color = Some(vrs::Color::from_rgb($0));",
+                    ItemKind::Field,
+                    "api-back-color",
+                ),
+                CompletionItem::new(
+                    "fore_color",
+                    "fore_color = Some(vrs::Color::from_rgb($0));",
+                    ItemKind::Field,
+                    "api-fore-color",
+                ),
+                CompletionItem::new(
+                    "font_size",
+                    "font_size = Some($0);",
+                    ItemKind::Field,
+                    "api-font-size",
+                ),
+                CompletionItem::new("anchor", "anchor", ItemKind::Field, "api-anchor"),
             ];
             let extra: &[(&str, &str, ItemKind, &str)] = match kind {
                 "CheckBox" => &[("checked", "checked", ItemKind::Field, "api-checked")],

@@ -60,7 +60,8 @@
   groups), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel, with their
   own properties (Checked, Items, Selected, Value, Minimum, Maximum, Group) and
   events (Click, TextChanged, CheckedChanged, SelectionChanged, ValueChanged).
-  `app.message_box("…")` shows a modal message (MsgBox).
+  `app.message_box("…")` shows a modal message (MsgBox). Every control has
+  BackColor, ForeColor, font size and Anchor (it follows window resizing).
 - **Multiple windows**: native windows (egui viewports) or sub-windows when
   the platform has a single window; simulated modal dialogs (the other windows
   are disabled); Load, Closing (can cancel) and Closed events; startup window
@@ -100,7 +101,7 @@
 - No bracket matching, no minimap.
 - Renaming a window (Form1 → MainForm) is not possible yet.
 - Modal dialogs are simulated: the operating system does not treat them as modal.
-- Background/Foreground/Font, Anchor and Layout are not properties yet.
+- Font family and automatic layouts (flow, table) are not available yet.
 
 ---
 
@@ -161,6 +162,8 @@
   leurs propriétés (Checked, Items, Selected, Value, Minimum, Maximum, Group)
   et événements (Click, TextChanged, CheckedChanged, SelectionChanged,
   ValueChanged). `app.message_box("…")` affiche un message modal (MsgBox).
+  Chaque contrôle a BackColor, ForeColor, taille de police et Anchor (il
+  suit le redimensionnement de la fenêtre).
 - **Multifenêtre** : fenêtres natives (viewports egui) ou sous-fenêtres si la
   plateforme n'a qu'une fenêtre ; dialogues modaux simulés (les autres
   fenêtres sont désactivées) ; événements Load, Closing (annulable) et
@@ -202,5 +205,5 @@
 - Pas de correspondance des parenthèses ni de minimap.
 - Le renommage d'une fenêtre (Form1 → MainForm) n'est pas encore possible.
 - Les dialogues modaux sont simulés : le système d'exploitation ne les traite pas comme modaux.
-- Les polices Background/Foreground/Font, Anchor et Layout ne sont pas encore
-  des propriétés.
+- La famille de police et les mises en page automatiques (flux, tableau) ne
+  sont pas encore disponibles.

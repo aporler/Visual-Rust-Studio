@@ -27,6 +27,7 @@ fn app_in(dir: &Path, lang: &str) -> VrsApp {
 fn harness(app: VrsApp) -> Harness<'static, VrsApp> {
     Harness::builder()
         .with_size(egui::vec2(1400.0, 900.0))
+        .with_max_steps(16)
         .with_accessibility_check(false)
         .build_ui_state(|ui, app: &mut VrsApp| app.frame(ui), app)
 }
