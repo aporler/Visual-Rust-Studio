@@ -24,6 +24,7 @@
 | `cargo clippy --workspace --all-targets` | no warnings |
 | `cargo fmt --all -- --check` | clean |
 | `cargo test -p vrs-lsp -- --ignored` and `cargo test -p vrs-app --test gui -- --ignored ide_with_rust_analyzer` | with the real rust-analyzer: completion, hover, definition, diagnostics, rename |
+| `VRS_TEST_DEBUGGER=… cargo test -p vrs-debugger -- --ignored` and `… -p vrs-app --test gui -- --ignored ide_debugging` | with GDB 16: breakpoint, stack, variables, watch, stepping, panic |
 | `vrs-i18n-check` | no errors; fr-CA and en-US 100 % complete |
 
 ### MVP acceptance criteria
@@ -71,6 +72,11 @@
   `app.exit()`, `Me` → `self`, `TextBox1` → `self.text_box1`, `Dim` → `let`,
   `True` → `true`, `Nothing` → `None`, `Console.WriteLine` → `println!`.
   These habits are underlined as you type, with a 💡 quick fix.
+- **Debugging** (GDB 14+, lldb-dap or CodeLLDB through DAP): breakpoints in
+  the margin (click or F9), F5 start/continue, Ctrl+F5 run without debugging,
+  F10/F11/Shift+F11 stepping, pause, stop; call stack, threads, local
+  variables (expandable, Rust types made readable), watch expressions; stop on
+  Rust panics with the faulty line selected.
 - **rust-analyzer** (optional, `rustup component add rust-analyzer`): live
   diagnostics, completion on every Rust type and crate, hover information
   (types and documentation), go to definition (F12 or Ctrl+click), rename
@@ -88,7 +94,7 @@
 
 - rust-analyzer quick fixes (code actions) are not offered yet; VRS hints and
   rustc suggestions are.
-- No debugger (phase 7). The Debug menu says so.
+- Debugging needs an installed debugger (GDB 14+, lldb-dap or CodeLLDB); conditional breakpoints are not available yet.
 - Panels are resizable but not dockable (egui_dock is not compatible with
   egui 0.37).
 - No bracket matching, no minimap.
@@ -167,6 +173,11 @@
   `self.text_box1`, `Dim` → `let`, `True` → `true`, `Nothing` → `None`,
   `Console.WriteLine` → `println!`. Ces habitudes sont soulignées pendant la
   frappe, avec une correction rapide 💡.
+- **Débogage** (GDB 14+, lldb-dap ou CodeLLDB via DAP) : points d'arrêt dans
+  la marge (clic ou F9), F5 démarrer/continuer, Ctrl+F5 exécuter sans
+  débogage, F10/F11/Maj+F11 pas à pas, interrompre, arrêter ; pile des
+  appels, threads, variables locales (dépliables, types Rust lisibles),
+  espions ; arrêt sur les paniques Rust avec la ligne fautive sélectionnée.
 - **rust-analyzer** (facultatif, `rustup component add rust-analyzer`) :
   diagnostics en direct, autocomplétion sur tous les types et crates Rust,
   infobulles (types et documentation), aller à la définition (F12 ou
@@ -185,7 +196,7 @@
 
 - Les corrections rapides de rust-analyzer (code actions) ne sont pas encore
   proposées ; celles de VRS et de rustc le sont.
-- Pas de débogueur (phase 7). Le menu Débogage l'indique clairement.
+- Le débogage nécessite un débogueur installé (GDB 14+, lldb-dap ou CodeLLDB) ; les points d'arrêt conditionnels ne sont pas encore disponibles.
 - Panneaux redimensionnables mais non ancrables (egui_dock incompatible avec
   egui 0.37).
 - Pas de correspondance des parenthèses ni de minimap.

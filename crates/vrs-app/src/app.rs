@@ -17,6 +17,7 @@ use crate::tabs::Tab;
 pub enum BottomTab {
     Output,
     Errors,
+    Debug,
 }
 
 /// Ligne de la console de sortie.
@@ -48,6 +49,7 @@ pub struct NewProjectDialog {
 pub struct SettingsDialog {
     pub original: Settings,
     pub cargo_path: String,
+    pub debugger_path: String,
 }
 
 /// Action en attente de confirmation (projet non approuvé).
@@ -85,6 +87,14 @@ pub struct VrsApp {
     pub lsp_pending: Vec<(i64, crate::lsp::Pending)>,
     pub lsp_generation: u64,
     pub lsp_synced: std::collections::HashSet<PathBuf>,
+    /// Session de débogage en cours.
+    pub debug: Option<crate::debug::DebugState>,
+    /// Lancer le débogueur à la fin de la compilation en cours.
+    pub debug_after_build: bool,
+    /// Points d'arrêt par fichier (lignes 1-based).
+    pub breakpoints: std::collections::BTreeMap<PathBuf, std::collections::BTreeSet<usize>>,
+    pub watches: Vec<crate::debug::Watch>,
+    pub watch_input: String,
     /// La commande en cours est une vérification automatique (silencieuse).
     pub build_quiet: bool,
     /// Diagnostics reçus pendant une vérification automatique.
@@ -148,6 +158,11 @@ impl VrsApp {
             lsp_pending: Vec::new(),
             lsp_generation: u64::MAX,
             lsp_synced: Default::default(),
+            debug: None,
+            debug_after_build: false,
+            breakpoints: Default::default(),
+            watches: Vec::new(),
+            watch_input: String::new(),
             build_quiet: false,
             pending_diagnostics: Vec::new(),
             console: Vec::new(),
@@ -271,6 +286,7 @@ impl VrsApp {
         }
         self.poll_build();
         self.poll_lsp();
+        self.poll_debug();
         self.update_title(&ctx);
         self.handle_close_request(&ctx);
         crate::ui::shortcuts(self, &ctx);
@@ -307,7 +323,7 @@ impl VrsApp {
         for c in commands {
             self.execute(c, &ctx);
         }
-        if self.is_building() {
+        if self.is_building() || self.is_debugging() {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
     }
@@ -343,6 +359,9 @@ impl VrsApp {
             b.kill();
         }
         self.stop_lsp();
+        if let Some(d) = self.debug.take() {
+            d.session.terminate();
+        }
         self.save_settings();
     }
 }

@@ -1,0 +1,18 @@
+[package]
+name = "vrs-debugger"
+description = "Visual Rust Studio — débogage via le protocole DAP (gdb, lldb-dap, CodeLLDB)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

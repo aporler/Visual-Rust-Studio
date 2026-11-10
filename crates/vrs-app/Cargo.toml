@@ -22,6 +22,7 @@ vrs-codegen.workspace = true
 vrs-compiler.workspace = true
 vrs-editor.workspace = true
 vrs-lsp.workspace = true
+vrs-debugger.workspace = true
 serde_json.workspace = true
 eframe.workspace = true
 egui.workspace = true

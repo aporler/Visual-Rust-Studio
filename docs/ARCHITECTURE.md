@@ -81,6 +81,7 @@ crates/
   vrs-project     .vrsproj, project templates, file tree
   vrs-compiler    cargo build/run/check/clippy/test/clean, JSON diagnostics
   vrs-lsp         minimal LSP client for rust-analyzer (JSON-RPC over stdio)
+  vrs-debugger    DAP client (gdb -i dap, lldb-dap, CodeLLDB)
   vrs-editor      code editor (highlighting, search, diagnostics, rustfmt)
   vrs-designer    visual designer (surface, properties, toolbox, undo)
   vrs-app         `vrs` binary: main window, menus, panels, dialogs
@@ -91,8 +92,8 @@ Dependencies (no cycles): `vrs-app` → `vrs-designer`, `vrs-editor`,
 `vrs-project`, `vrs-compiler`, `vrs-settings`, `vrs-i18n`. `vrs-project` →
 `vrs-codegen` → `vrs-components` → `vrs-core`. `vrs-designer` → `vrs-runtime`.
 
-`vrs-debugger` does not exist yet: it will be created with the DAP
-integration.
+Debugging drives an existing adapter through DAP; VRS does not implement a
+debugger of its own.
 
 ### 3. Generated project (graphical application)
 
@@ -228,6 +229,7 @@ crates/
   vrs-project     .vrsproj, modèles de projets, arborescence
   vrs-compiler    cargo build/run/check/clippy/test/clean, diagnostics JSON
   vrs-lsp         client LSP minimal pour rust-analyzer (JSON-RPC sur stdio)
+  vrs-debugger    client DAP (gdb -i dap, lldb-dap, CodeLLDB)
   vrs-editor      éditeur de code (coloration, recherche, diagnostics, rustfmt)
   vrs-designer    concepteur visuel (surface, propriétés, boîte à outils, annuler)
   vrs-app         binaire `vrs` : fenêtre principale, menus, panneaux, dialogues
@@ -238,9 +240,8 @@ Dépendances (sans cycle) : `vrs-app` → `vrs-designer`, `vrs-editor`,
 `vrs-project`, `vrs-compiler`, `vrs-settings`, `vrs-i18n`. `vrs-project` →
 `vrs-codegen` → `vrs-components` → `vrs-core`. `vrs-designer` → `vrs-runtime`.
 
-`vrs-debugger` n'existe pas encore : il sera créé avec l'intégration DAP. Il
-n'y a pas de crate séparé pour un « noyau » d'IDE au-delà de `vrs-core` : le
-découpage actuel suffit.
+Le débogage pilote un adaptateur existant via DAP ; VRS n'implémente pas
+de débogueur.
 
 ### 3. Projet généré (application graphique)
 

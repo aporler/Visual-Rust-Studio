@@ -73,7 +73,6 @@ cmd-distribute-h = Distribute Horizontally
 cmd-distribute-v = Distribute Vertically
 cmd-bring-front = Bring to Front
 cmd-send-back = Send to Back
-debug-not-available = The debugger will arrive in a later version (LLDB/GDB via DAP).
 
 ## Common buttons
 
@@ -264,3 +263,32 @@ cmd-set-startup-form = Set as Startup Window
 menu-close-strategy = When the Main Window Closes
 close-strategy-main = Close the application
 close-strategy-last = Hide it; close the application with the last window
+
+## Debugging / Débogage
+
+cmd-run-without-debugging = Run Without Debugging
+cmd-debug-continue = Continue
+cmd-debug-pause = Pause
+cmd-debug-stop = Stop Debugging
+cmd-step-over = Step Over
+cmd-step-into = Step Into
+cmd-step-out = Step Out
+cmd-toggle-breakpoint = Toggle Breakpoint
+cmd-clear-breakpoints = Delete All Breakpoints
+panel-debug = Debug
+debug-idle = No debugging session. Set breakpoints by clicking in the margin (or F9), then press F5.
+debug-call-stack = Call Stack
+debug-threads = Threads
+debug-locals = Locals
+debug-watch = Watch
+debug-watch-add = Expression to watch
+debug-running = Running…
+debug-paused = Paused.
+debug-panic = Stopped on a Rust panic: see the call stack.
+debug-stopped = Debugging stopped.
+debug-started = Debugging with { $adapter }.
+debug-exited = The program exited (code { $code }).
+debug-no-adapter = No debugger found. Install GDB 14 or newer, lldb-dap or CodeLLDB, or set its path in Tools → Settings → Rust Toolchain.
+debug-no-binary = The program to debug cannot be found.
+settings-debugger-path = Path to the debugger
+settings-debugger-detected = Debugger: { $adapter }

@@ -148,9 +148,43 @@ impl VrsApp {
             }
             Command::Cargo(c) => self.run_cargo(c),
             Command::Stop => {
-                if let Some(b) = &self.build {
+                self.debug_after_build = false;
+                if self.is_debugging() {
+                    self.stop_debugging();
+                } else if let Some(b) = &self.build {
                     b.kill();
                 }
+            }
+            Command::DebugStartOrContinue => {
+                if self.debug_paused() {
+                    self.debug_action(crate::debug::DebugAction::Continue);
+                } else if self.is_debugging() {
+                } else if self.debug_adapter().is_some() {
+                    self.start_debugging();
+                } else {
+                    self.run_cargo(CargoCommand::Run);
+                }
+            }
+            Command::DebugStart => self.start_debugging(),
+            Command::Debug(a) => self.debug_action(a),
+            Command::ToggleBreakpoint => {
+                if let Some(Tab::Code(e)) = self.tabs.get_mut(self.active) {
+                    let line = self.cursor.map(|(l, _)| l).unwrap_or(1);
+                    e.toggle_breakpoint(line);
+                }
+            }
+            Command::ClearBreakpoints => {
+                for t in &mut self.tabs {
+                    if let Tab::Code(e) = t
+                        && !e.breakpoints.is_empty()
+                    {
+                        let lines: Vec<usize> = e.breakpoints.iter().copied().collect();
+                        for l in lines {
+                            e.toggle_breakpoint(l);
+                        }
+                    }
+                }
+                self.breakpoints.clear();
             }
             Command::ToggleRelease => {
                 self.settings.build.release = !self.settings.build.release;
@@ -163,6 +197,13 @@ impl VrsApp {
                         .settings
                         .build
                         .cargo_path
+                        .as_ref()
+                        .map(|p| p.display().to_string())
+                        .unwrap_or_default(),
+                    debugger_path: self
+                        .settings
+                        .build
+                        .debugger_path
                         .as_ref()
                         .map(|p| p.display().to_string())
                         .unwrap_or_default(),
@@ -395,6 +436,7 @@ impl VrsApp {
                 Ok(mut e) => {
                     e.diagnostics = self.editor_diagnostics(path);
                     e.completion = self.completion_context_for(path);
+                    e.breakpoints = self.restore_breakpoints(path);
                     self.tabs.push(Tab::Code(Box::new(e)));
                     self.tabs.len() - 1
                 }
@@ -698,6 +740,11 @@ impl VrsApp {
         ));
     }
 
+    /// Lance une commande Cargo (utilisée aussi par le débogage).
+    pub fn execute_cargo(&mut self, command: CargoCommand) {
+        self.run_cargo(command);
+    }
+
     fn run_cargo(&mut self, command: CargoCommand) {
         let Some(project) = &self.project else {
             let msg = self.i18n.tr("error-no-project");
@@ -843,6 +890,9 @@ impl VrsApp {
                         )
                     };
                     self.log(kind, format!("{text} ({:.1} s)", duration.as_secs_f32()));
+                    if std::mem::take(&mut self.debug_after_build) && success && !killed {
+                        self.launch_debugger();
+                    }
                     self.status = text;
                     if !success
                         && !killed

@@ -75,7 +75,6 @@ cmd-distribute-h = Répartir horizontalement
 cmd-distribute-v = Répartir verticalement
 cmd-bring-front = Mettre au premier plan
 cmd-send-back = Mettre à l'arrière-plan
-debug-not-available = Le débogueur arrivera dans une version ultérieure (LLDB/GDB via DAP).
 
 ## Boutons communs
 
@@ -268,3 +267,32 @@ cmd-set-startup-form = Définir comme fenêtre de démarrage
 menu-close-strategy = À la fermeture de la fenêtre principale
 close-strategy-main = Fermer l'application
 close-strategy-last = La masquer ; fermer l'application avec la dernière fenêtre
+
+## Debugging / Débogage
+
+cmd-run-without-debugging = Exécuter sans débogage
+cmd-debug-continue = Continuer
+cmd-debug-pause = Interrompre
+cmd-debug-stop = Arrêter le débogage
+cmd-step-over = Pas à pas principal
+cmd-step-into = Pas à pas détaillé
+cmd-step-out = Pas à pas sortant
+cmd-toggle-breakpoint = Basculer le point d'arrêt
+cmd-clear-breakpoints = Supprimer tous les points d'arrêt
+panel-debug = Débogage
+debug-idle = Aucune session de débogage. Placez des points d'arrêt en cliquant dans la marge (ou F9), puis appuyez sur F5.
+debug-call-stack = Pile des appels
+debug-threads = Threads
+debug-locals = Variables locales
+debug-watch = Espions
+debug-watch-add = Expression à surveiller
+debug-running = En cours d'exécution…
+debug-paused = En pause.
+debug-panic = Arrêt sur une panique Rust : consultez la pile des appels.
+debug-stopped = Débogage arrêté.
+debug-started = Débogage avec { $adapter }.
+debug-exited = Le programme s'est terminé (code { $code }).
+debug-no-adapter = Aucun débogueur trouvé. Installez GDB 14 ou plus récent, lldb-dap ou CodeLLDB, ou indiquez son chemin dans Outils → Paramètres → Chaîne d'outils Rust.
+debug-no-binary = Le programme à déboguer est introuvable.
+settings-debugger-path = Chemin du débogueur
+settings-debugger-detected = Débogueur : { $adapter }

@@ -58,4 +58,11 @@ pub enum Command {
     SetStartupForm(String),
     /// `true` : l'application se ferme avec la dernière fenêtre.
     SetCloseStrategy(bool),
+    /// F5 : continuer si le programme est arrêté, sinon démarrer le débogage
+    /// (ou exécuter s'il n'y a pas de débogueur).
+    DebugStartOrContinue,
+    DebugStart,
+    Debug(crate::debug::DebugAction),
+    ToggleBreakpoint,
+    ClearBreakpoints,
 }

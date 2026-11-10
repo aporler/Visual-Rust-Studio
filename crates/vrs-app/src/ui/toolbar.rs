@@ -71,7 +71,14 @@ pub fn toolbar(app: &mut VrsApp, ui: &mut egui::Ui) {
             Command::Cargo(CargoCommand::Run),
             has_project && !building,
         );
-        tool(app, ui, "⏹", "cmd-stop", Command::Stop, building);
+        tool(
+            app,
+            ui,
+            "⏹",
+            "cmd-stop",
+            Command::Stop,
+            building || app.is_debugging(),
+        );
         tool(
             app,
             ui,
@@ -80,15 +87,45 @@ pub fn toolbar(app: &mut VrsApp, ui: &mut egui::Ui) {
             Command::Cargo(CargoCommand::Check),
             has_project && !building,
         );
-        ui.add_enabled(
-            false,
-            egui::Button::new("🐞").min_size(egui::vec2(28.0, 24.0)),
-        )
-        .on_disabled_hover_text(format!(
-            "{} — {}",
-            app.i18n.tr("cmd-debug-start"),
-            app.i18n.tr("debug-not-available")
-        ));
+        let debugging = app.is_debugging();
+        let paused = app.debug_paused();
+        tool(
+            app,
+            ui,
+            "🐞",
+            "cmd-debug-start",
+            Command::DebugStart,
+            has_project && !building && !debugging,
+        );
+        if debugging {
+            tool(
+                app,
+                ui,
+                "⏵",
+                "cmd-debug-continue",
+                Command::DebugStartOrContinue,
+                paused,
+            );
+            tool(
+                app,
+                ui,
+                "⏸",
+                "cmd-debug-pause",
+                Command::Debug(crate::debug::DebugAction::Pause),
+                !paused,
+            );
+            for (label, key, action) in [
+                ("F10", "cmd-step-over", crate::debug::DebugAction::StepOver),
+                ("F11", "cmd-step-into", crate::debug::DebugAction::StepInto),
+                (
+                    "Shift+F11",
+                    "cmd-step-out",
+                    crate::debug::DebugAction::StepOut,
+                ),
+            ] {
+                tool(app, ui, label, key, Command::Debug(action), paused);
+            }
+        }
         ui.separator();
         let mut release = app.settings.build.release;
         if ui

@@ -115,6 +115,12 @@ pub struct CodeEditor {
     hover_info: Option<(usize, String)>,
     /// Renommage en cours : (index, nouveau nom, focus à donner).
     rename: Option<(usize, String, bool)>,
+    /// Points d'arrêt (lignes 1-based).
+    pub breakpoints: std::collections::BTreeSet<usize>,
+    breakpoints_changed: bool,
+    /// Ligne en cours d'exécution pendant le débogage (1-based).
+    pub exec_line: Option<usize>,
+    exec_scroll: bool,
 }
 
 impl CodeEditor {
@@ -153,6 +159,10 @@ impl CodeEditor {
             hover_char: None,
             hover_info: None,
             rename: None,
+            breakpoints: Default::default(),
+            breakpoints_changed: false,
+            exec_line: None,
+            exec_scroll: false,
         }
     }
 
@@ -230,6 +240,25 @@ impl CodeEditor {
             .take_while(|c| c.is_alphanumeric() || *c == '_')
             .collect();
         self.rename = Some((start, format!("{partial}{rest}"), true));
+    }
+
+    /// Active ou désactive un point d'arrêt (ligne 1-based).
+    pub fn toggle_breakpoint(&mut self, line: usize) {
+        if !self.breakpoints.remove(&line) {
+            self.breakpoints.insert(line);
+        }
+        self.breakpoints_changed = true;
+    }
+
+    /// Indique la ligne en cours d'exécution et la rend visible.
+    pub fn set_exec_line(&mut self, line: Option<usize>) {
+        self.exec_scroll = line.is_some() && line != self.exec_line;
+        self.exec_line = line;
+    }
+
+    /// Les points d'arrêt ont-ils changé depuis le dernier appel ?
+    pub fn take_breakpoints_changed(&mut self) -> bool {
+        std::mem::take(&mut self.breakpoints_changed)
     }
 
     /// Demande la définition du symbole sous le curseur (F12).
@@ -425,6 +454,13 @@ impl CodeEditor {
                 out.changed = true;
             }
         }
+        if has_focus && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F9)) {
+            let line = self
+                .last_cursor
+                .map(|c| char_to_line_col(&self.text, c).0)
+                .unwrap_or(1);
+            self.toggle_breakpoint(line);
+        }
         if has_focus && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F12)) {
             self.go_to_definition();
         }
@@ -473,9 +509,28 @@ impl CodeEditor {
                     for (line, sev) in &diag_lines {
                         let y = gutter_rect.top() + 2.0 + (*line as f32 - 0.5) * row_h;
                         ui.painter().circle_filled(
-                            egui::pos2(gutter_rect.left() + 3.0, y),
-                            2.5,
+                            egui::pos2(gutter_rect.left() + 2.0, y),
+                            2.0,
                             severity_color(*sev, ui.visuals()),
+                        );
+                    }
+                    // Points d'arrêt : clic dans la gouttière.
+                    let bp_resp =
+                        ui.interact(gutter_rect, id.with("breakpoints"), egui::Sense::click());
+                    if bp_resp.clicked()
+                        && let Some(p) = bp_resp.interact_pointer_pos()
+                    {
+                        let line = ((p.y - gutter_rect.top() - 2.0) / row_h).floor() as usize + 1;
+                        if line <= line_count {
+                            self.toggle_breakpoint(line);
+                        }
+                    }
+                    for line in &self.breakpoints {
+                        let y = gutter_rect.top() + 2.0 + (*line as f32 - 0.5) * row_h;
+                        ui.painter().circle_filled(
+                            egui::pos2(gutter_rect.left() + 9.0, y),
+                            (row_h * 0.3).min(5.0),
+                            Color32::from_rgb(200, 40, 40),
                         );
                     }
 
@@ -589,6 +644,31 @@ impl CodeEditor {
                         let r = output.galley.pos_from_cursor(CCursor::new(a));
                         let screen = r.translate(output.galley_pos.to_vec2()).expand(row_h * 3.0);
                         ui.scroll_to_rect(screen, Some(egui::Align::Center));
+                    }
+
+                    // Ligne en cours d'exécution (débogage).
+                    if let Some(line) = self.exec_line {
+                        let y = output.galley_pos.y + (line as f32 - 1.0) * row_h;
+                        let r = egui::Rect::from_min_max(
+                            egui::pos2(gutter_rect.left(), y),
+                            egui::pos2(output.response.rect.right(), y + row_h),
+                        );
+                        ui.painter().rect_filled(
+                            r,
+                            0.0,
+                            Color32::from_rgba_unmultiplied(255, 220, 0, 50),
+                        );
+                        ui.painter().text(
+                            egui::pos2(gutter_rect.left() + 9.0, y + row_h / 2.0),
+                            egui::Align2::CENTER_CENTER,
+                            "▶",
+                            FontId::proportional(row_h * 0.7),
+                            Color32::from_rgb(230, 170, 0),
+                        );
+                        if self.exec_scroll {
+                            self.exec_scroll = false;
+                            ui.scroll_to_rect(r.expand(row_h * 3.0), Some(egui::Align::Center));
+                        }
                     }
 
                     // Soulignement des diagnostics.

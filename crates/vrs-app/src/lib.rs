@@ -6,11 +6,13 @@
 mod actions;
 mod app;
 mod commands;
+mod debug;
 mod lang;
 mod lsp;
 mod tabs;
 mod ui;
 
-pub use app::VrsApp;
+pub use app::{BottomTab, VrsApp};
 pub use commands::Command;
+pub use debug::{DebugAction, Watch};
 pub use tabs::Tab;

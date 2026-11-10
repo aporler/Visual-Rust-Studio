@@ -236,6 +236,32 @@ fn write_project_file(path: &Path, file: &ProjectFile) -> Result<(), ProjectErro
     Ok(())
 }
 
+/// Exécutable produit par `cargo build` pour ce projet (premier `[[bin]]`, sinon
+/// le nom du paquet), dans `target/debug` ou `target/release`.
+pub fn binary_path(root: &Path, release: bool) -> Option<PathBuf> {
+    let manifest: toml::Table = std::fs::read_to_string(root.join("Cargo.toml"))
+        .ok()?
+        .parse()
+        .ok()?;
+    let bin = manifest
+        .get("bin")
+        .and_then(|b| b.as_array())
+        .and_then(|a| a.first())
+        .and_then(|b| b.get("name"))
+        .and_then(|n| n.as_str())
+        .or_else(|| manifest.get("package")?.get("name")?.as_str())?
+        .to_owned();
+    let target = std::env::var_os("CARGO_TARGET_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| root.join("target"));
+    let profile = if release { "release" } else { "debug" };
+    Some(
+        target
+            .join(profile)
+            .join(format!("{bin}{}", std::env::consts::EXE_SUFFIX)),
+    )
+}
+
 /// Ouvre un projet : fichier `.vrsproj`, dossier qui en contient un, ou dossier Cargo.
 pub fn open_project(path: &Path) -> Result<Project, ProjectError> {
     let path = path.canonicalize()?;
@@ -439,6 +465,15 @@ mod tests {
             open_project(empty.path()),
             Err(ProjectError::NotAProject(_))
         ));
+    }
+
+    #[test]
+    fn binary_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let p =
+            create_project(dir.path(), "MonApp", ProjectKind::Console, &EnglishComments).unwrap();
+        let bin = binary_path(&p.root, false).unwrap();
+        assert!(bin.ends_with(format!("debug/mon-app{}", std::env::consts::EXE_SUFFIX)));
     }
 
     #[test]

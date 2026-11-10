@@ -31,8 +31,21 @@ pub fn shortcut_table() -> Vec<(KeyboardShortcut, Command)> {
         (sc(cmd_shift, Key::B), Command::Cargo(CargoCommand::Build)),
         (sc(Modifiers::SHIFT, Key::F5), Command::Stop),
         (
-            sc(Modifiers::NONE, Key::F5),
+            sc(Modifiers::COMMAND, Key::F5),
             Command::Cargo(CargoCommand::Run),
+        ),
+        (sc(Modifiers::NONE, Key::F5), Command::DebugStartOrContinue),
+        (
+            sc(Modifiers::SHIFT, Key::F11),
+            Command::Debug(crate::debug::DebugAction::StepOut),
+        ),
+        (
+            sc(Modifiers::NONE, Key::F10),
+            Command::Debug(crate::debug::DebugAction::StepOver),
+        ),
+        (
+            sc(Modifiers::NONE, Key::F11),
+            Command::Debug(crate::debug::DebugAction::StepInto),
         ),
         (sc(Modifiers::NONE, Key::F7), Command::ViewCode),
         (sc(Modifiers::SHIFT, Key::F7), Command::ViewDesigner),

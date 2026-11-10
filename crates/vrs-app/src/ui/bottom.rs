@@ -27,6 +27,11 @@ pub fn bottom_panel(app: &mut VrsApp, ui: &mut egui::Ui) {
             BottomTab::Errors,
             format!("{} ({})", app.i18n.tr("panel-errors"), errors + warnings),
         );
+        ui.selectable_value(
+            &mut app.bottom_tab,
+            BottomTab::Debug,
+            app.i18n.tr("panel-debug"),
+        );
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if app.bottom_tab == BottomTab::Output
                 && ui.small_button(app.i18n.tr("button-clear")).clicked()
@@ -50,6 +55,7 @@ pub fn bottom_panel(app: &mut VrsApp, ui: &mut egui::Ui) {
     match app.bottom_tab {
         BottomTab::Output => output(app, ui),
         BottomTab::Errors => error_list(app, ui),
+        BottomTab::Debug => debug_panel(app, ui),
     }
 }
 
@@ -179,5 +185,145 @@ fn error_list(app: &mut VrsApp, ui: &mut egui::Ui) {
             path,
             line: Some(line),
         });
+    }
+}
+
+fn debug_panel(app: &mut VrsApp, ui: &mut egui::Ui) {
+    let Some(d) = &app.debug else {
+        ui.weak(app.i18n.tr("debug-idle"));
+        return;
+    };
+    let frames = d.frames.clone();
+    let selected = d.selected_frame;
+    let locals = d.locals;
+    let variables = d.variables.clone();
+    let threads = d.threads.clone();
+    let paused = d.paused;
+    let mut select = None;
+    let mut expand = Vec::new();
+    let mut remove_watch = None;
+    let mut add_watch = None;
+    ui.columns(3, |cols| {
+        // Pile d'appels.
+        cols[0].strong(app.i18n.tr("debug-call-stack"));
+        egui::ScrollArea::vertical()
+            .id_salt("vrs-stack")
+            .show(&mut cols[0], |ui| {
+                if !paused {
+                    ui.weak(app.i18n.tr("debug-running"));
+                }
+                for (i, f) in frames.iter().enumerate() {
+                    let file = f
+                        .path
+                        .as_ref()
+                        .and_then(|p| p.file_name())
+                        .map(|n| format!("{}:{}", n.to_string_lossy(), f.line))
+                        .unwrap_or_default();
+                    if ui
+                        .selectable_label(
+                            i == selected,
+                            egui::RichText::new(format!("{}  {file}", f.name)).monospace(),
+                        )
+                        .clicked()
+                    {
+                        select = Some(i);
+                    }
+                }
+                if !threads.is_empty() {
+                    ui.separator();
+                    ui.strong(app.i18n.tr("debug-threads"));
+                    for t in &threads {
+                        ui.monospace(format!("#{} {}", t.id, t.name));
+                    }
+                }
+            });
+        // Variables locales.
+        cols[1].strong(app.i18n.tr("debug-locals"));
+        egui::ScrollArea::vertical()
+            .id_salt("vrs-locals")
+            .show(&mut cols[1], |ui| {
+                if let Some(r) = locals {
+                    variables_tree(ui, r, &variables, &mut expand, 0);
+                }
+            });
+        // Espions.
+        cols[2].strong(app.i18n.tr("debug-watch"));
+        egui::ScrollArea::vertical()
+            .id_salt("vrs-watch")
+            .show(&mut cols[2], |ui| {
+                for (i, w) in app.watches.iter().enumerate() {
+                    ui.horizontal(|ui| {
+                        if ui.small_button("✖").clicked() {
+                            remove_watch = Some(i);
+                        }
+                        ui.monospace(format!(
+                            "{} = {}",
+                            w.expression,
+                            w.value.clone().unwrap_or_else(|| "…".into())
+                        ));
+                    });
+                }
+                ui.horizontal(|ui| {
+                    let r = ui.add(
+                        egui::TextEdit::singleline(&mut app.watch_input)
+                            .hint_text(app.i18n.tr("debug-watch-add"))
+                            .desired_width(180.0),
+                    );
+                    if r.lost_focus()
+                        && ui.input(|i| i.key_pressed(egui::Key::Enter))
+                        && !app.watch_input.trim().is_empty()
+                    {
+                        add_watch = Some(app.watch_input.trim().to_owned());
+                    }
+                });
+            });
+    });
+    if let Some(i) = select {
+        app.select_frame(i);
+    }
+    for r in expand {
+        app.load_variables(r);
+    }
+    if let Some(i) = remove_watch {
+        app.watches.remove(i);
+    }
+    if let Some(e) = add_watch {
+        app.watches.push(crate::debug::Watch {
+            expression: e,
+            value: None,
+        });
+        app.watch_input.clear();
+        app.refresh_watches();
+    }
+}
+
+fn variables_tree(
+    ui: &mut egui::Ui,
+    reference: i64,
+    variables: &std::collections::HashMap<i64, Vec<vrs_debugger::Variable>>,
+    expand: &mut Vec<i64>,
+    depth: usize,
+) {
+    let Some(list) = variables.get(&reference) else {
+        ui.spinner();
+        expand.push(reference);
+        return;
+    };
+    for v in list {
+        let ty = v
+            .type_name
+            .as_deref()
+            .map(|t| format!(": {t}"))
+            .unwrap_or_default();
+        let text = format!("{}{ty} = {}", v.name, v.value);
+        if v.children > 0 && depth < 8 {
+            egui::CollapsingHeader::new(egui::RichText::new(text).monospace())
+                .id_salt(("var", reference, &v.name))
+                .show(ui, |ui| {
+                    variables_tree(ui, v.children, variables, expand, depth + 1)
+                });
+        } else {
+            ui.monospace(text);
+        }
     }
 }

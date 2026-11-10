@@ -76,7 +76,6 @@ cmd-distribute-h = Distribuir horizontalmente
 cmd-distribute-v = Distribuir verticalmente
 cmd-bring-front = Traer al frente
 cmd-send-back = Enviar al fondo
-debug-not-available = El depurador llegará en una versión posterior (LLDB/GDB mediante DAP).
 
 ## Botones comunes
 
@@ -267,3 +266,32 @@ cmd-set-startup-form = Establecer como ventana de inicio
 menu-close-strategy = Al cerrar la ventana principal
 close-strategy-main = Cerrar la aplicación
 close-strategy-last = Ocultarla; cerrar la aplicación con la última ventana
+
+## Debugging / Débogage
+
+cmd-run-without-debugging = Ejecutar sin depurar
+cmd-debug-continue = Continuar
+cmd-debug-pause = Pausar
+cmd-debug-stop = Detener la depuración
+cmd-step-over = Paso a paso por procedimientos
+cmd-step-into = Paso a paso por instrucciones
+cmd-step-out = Salir de la función
+cmd-toggle-breakpoint = Alternar punto de interrupción
+cmd-clear-breakpoints = Eliminar todos los puntos de interrupción
+panel-debug = Depuración
+debug-idle = No hay sesión de depuración. Coloque puntos de interrupción haciendo clic en el margen (o F9) y pulse F5.
+debug-call-stack = Pila de llamadas
+debug-threads = Subprocesos
+debug-locals = Variables locales
+debug-watch = Inspección
+debug-watch-add = Expresión a inspeccionar
+debug-running = En ejecución…
+debug-paused = En pausa.
+debug-panic = Detenido en un pánico de Rust: vea la pila de llamadas.
+debug-stopped = Depuración detenida.
+debug-started = Depurando con { $adapter }.
+debug-exited = El programa terminó (código { $code }).
+debug-no-adapter = No se encontró ningún depurador. Instale GDB 14 o posterior, lldb-dap o CodeLLDB, o indique su ruta en Herramientas → Configuración → Cadena de herramientas Rust.
+debug-no-binary = No se encuentra el programa a depurar.
+settings-debugger-path = Ruta del depurador
+settings-debugger-detected = Depurador: { $adapter }

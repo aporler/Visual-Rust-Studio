@@ -53,6 +53,8 @@ pub struct BuildSettings {
     pub release: bool,
     /// Chemin explicite vers `cargo` (sinon détection automatique).
     pub cargo_path: Option<PathBuf>,
+    /// Débogueur (gdb ≥ 14, lldb-dap ou codelldb) ; sinon détection automatique.
+    pub debugger_path: Option<PathBuf>,
 }
 
 /// Tous les paramètres de l'IDE.

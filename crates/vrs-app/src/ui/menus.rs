@@ -211,12 +211,74 @@ pub fn menu_bar(app: &mut VrsApp, ui: &mut egui::Ui) {
             );
         });
         ui.menu_button(i18n_menu(app, "menu-debug"), |ui| {
-            ui.add_enabled(false, egui::Button::new(app.i18n.tr("cmd-debug-start")))
-                .on_disabled_hover_text(app.i18n.tr("debug-not-available"));
-            ui.label(
-                egui::RichText::new(app.i18n.tr("debug-not-available"))
-                    .weak()
-                    .small(),
+            let debugging = app.is_debugging();
+            let paused = app.debug_paused();
+            item(
+                app,
+                ui,
+                "cmd-debug-start",
+                Command::DebugStart,
+                has_project && !debugging && !building,
+            );
+            item(
+                app,
+                ui,
+                "cmd-run-without-debugging",
+                Command::Cargo(CargoCommand::Run),
+                has_project && !building && !debugging,
+            );
+            ui.separator();
+            item(
+                app,
+                ui,
+                "cmd-debug-continue",
+                Command::DebugStartOrContinue,
+                paused,
+            );
+            item(
+                app,
+                ui,
+                "cmd-debug-pause",
+                Command::Debug(crate::debug::DebugAction::Pause),
+                debugging && !paused,
+            );
+            item(app, ui, "cmd-debug-stop", Command::Stop, debugging);
+            ui.separator();
+            item(
+                app,
+                ui,
+                "cmd-step-over",
+                Command::Debug(crate::debug::DebugAction::StepOver),
+                paused,
+            );
+            item(
+                app,
+                ui,
+                "cmd-step-into",
+                Command::Debug(crate::debug::DebugAction::StepInto),
+                paused,
+            );
+            item(
+                app,
+                ui,
+                "cmd-step-out",
+                Command::Debug(crate::debug::DebugAction::StepOut),
+                paused,
+            );
+            ui.separator();
+            item(
+                app,
+                ui,
+                "cmd-toggle-breakpoint",
+                Command::ToggleBreakpoint,
+                in_code,
+            );
+            item(
+                app,
+                ui,
+                "cmd-clear-breakpoints",
+                Command::ClearBreakpoints,
+                true,
             );
         });
         ui.add_enabled_ui(in_designer, |ui| {

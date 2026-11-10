@@ -285,6 +285,23 @@ fn settings(app: &mut VrsApp, ctx: &egui::Context) {
                 });
                 let configured = (!dlg.cargo_path.trim().is_empty())
                     .then(|| PathBuf::from(dlg.cargo_path.trim()));
+                ui.horizontal(|ui| {
+                    ui.label(app.i18n.tr("settings-debugger-path"));
+                    ui.add(
+                        egui::TextEdit::singleline(&mut dlg.debugger_path)
+                            .hint_text(app.i18n.tr("settings-cargo-path-hint"))
+                            .desired_width(300.0),
+                    );
+                });
+                let dbg_configured = (!dlg.debugger_path.trim().is_empty())
+                    .then(|| PathBuf::from(dlg.debugger_path.trim()));
+                match vrs_debugger::find_adapter(dbg_configured.as_deref()) {
+                    Some(a) => ui.weak(app.i18n.trf(
+                        "settings-debugger-detected",
+                        &[("adapter", a.name().into())],
+                    )),
+                    None => ui.weak(app.i18n.tr("debug-no-adapter")),
+                };
                 match vrs_compiler::find_cargo(configured.as_deref()) {
                     Some(p) => ui.weak(app.i18n.trf(
                         "settings-cargo-detected",
@@ -324,6 +341,8 @@ fn settings(app: &mut VrsApp, ctx: &egui::Context) {
         if ok {
             let p = dlg.cargo_path.trim();
             app.settings.build.cargo_path = (!p.is_empty()).then(|| PathBuf::from(p));
+            let d = dlg.debugger_path.trim();
+            app.settings.build.debugger_path = (!d.is_empty()).then(|| PathBuf::from(d));
             app.settings = app.settings.clone().sanitized();
             app.save_settings();
             if app.settings.lsp_enabled != dlg.original.lsp_enabled {

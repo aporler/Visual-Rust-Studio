@@ -628,3 +628,112 @@ fn ide_with_rust_analyzer() {
     }
     assert!(found, "pas de propositions de rust-analyzer");
 }
+
+/// Panneau Débogage au repos (rendu, traductions).
+#[test]
+fn debug_panel_idle_renders() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(app_in(dir.path(), "fr-CA"));
+    h.state_mut().bottom_tab = vrs_app::BottomTab::Debug;
+    h.run();
+    assert!(
+        h.query_by_label_contains("Aucune session de débogage")
+            .is_some()
+    );
+    h.get_by_label("Déboguer").click();
+    h.run();
+    assert!(h.query_by_label_contains("Pas à pas principal").is_some());
+    assert!(
+        h.state().i18n.missing_keys().is_empty(),
+        "{:?}",
+        h.state().i18n.missing_keys()
+    );
+}
+
+/// Débogage réel dans l'IDE (GDB ≥ 14, lldb-dap ou CodeLLDB) :
+/// `VRS_TEST_DEBUGGER=/chemin/gdb cargo test -p vrs-app --test gui -- --ignored ide_debugging`
+#[test]
+#[ignore = "nécessite un débogueur (VRS_TEST_DEBUGGER)"]
+fn ide_debugging() {
+    use std::time::{Duration, Instant};
+    let dir = tempfile::tempdir().unwrap();
+    let mut app = app_in(dir.path(), "fr-CA");
+    app.settings.build.debugger_path = std::env::var_os("VRS_TEST_DEBUGGER").map(Into::into);
+    let mut h = harness(app);
+    h.state_mut()
+        .create_project(ProjectKind::Console, dir.path(), "dbg");
+    h.step();
+    let main = h.state().project.as_ref().unwrap().root.join("src/main.rs");
+    std::fs::write(
+        &main,
+        "fn main() {\n    let n = 21;\n    let message = String::from(\"Bonjour\");\n    let double = n * 2;\n    println!(\"{message} {double}\");\n    let v: Vec<i32> = Vec::new();\n    let _ = v[double as usize];\n}\n",
+    )
+    .unwrap();
+    h.state_mut().cmd(Command::OpenFile {
+        path: main.clone(),
+        line: None,
+    });
+    h.step();
+    {
+        let app = h.state_mut();
+        let Some(Tab::Code(e)) = app.active_tab_mut() else {
+            panic!()
+        };
+        e.reload_if_clean();
+        e.toggle_breakpoint(4);
+    }
+    h.state_mut().cmd(Command::DebugStartOrContinue);
+    h.step();
+    let until = |h: &mut Harness<'static, VrsApp>, secs: u64, f: &dyn Fn(&VrsApp) -> bool| {
+        let deadline = Instant::now() + Duration::from_secs(secs);
+        while Instant::now() < deadline {
+            h.step();
+            if f(h.state()) {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        false
+    };
+    let exec_line = |app: &VrsApp| match app.active_tab() {
+        Some(Tab::Code(e)) => e.exec_line,
+        _ => None,
+    };
+    assert!(
+        until(&mut h, 300, &|a| a.debug_paused()
+            && exec_line(a) == Some(4)),
+        "pas d'arrêt ligne 4 : {:?}",
+        h.state()
+            .console
+            .iter()
+            .map(|l| &l.text)
+            .collect::<Vec<_>>()
+    );
+    // Variables locales : n = 21, message = "Bonjour".
+    assert!(until(&mut h, 30, &|a| {
+        let Some(d) = &a.debug else { return false };
+        d.locals.and_then(|r| d.variables.get(&r)).is_some_and(|v| {
+            v.iter().any(|x| x.name == "n" && x.value == "21")
+                && v.iter()
+                    .any(|x| x.name == "message" && x.value.contains("Bonjour"))
+        })
+    }));
+    // Espion.
+    h.state_mut().watches.push(vrs_app::Watch {
+        expression: "n + 1".into(),
+        value: None,
+    });
+    h.state_mut().refresh_watches();
+    assert!(until(&mut h, 20, &|a| a.watches[0].value.as_deref() == Some("22")));
+    // Pas à pas principal (F10) : ligne 5.
+    h.state_mut()
+        .cmd(Command::Debug(vrs_app::DebugAction::StepOver));
+    assert!(until(&mut h, 30, &|a| a.debug_paused() && exec_line(a) == Some(5)));
+    // Continuer : arrêt sur la panique, ligne 7 sélectionnée dans la pile.
+    h.state_mut().cmd(Command::DebugStartOrContinue);
+    assert!(until(&mut h, 30, &|a| a.debug_paused() && exec_line(a) == Some(7)));
+    assert!(h.state().status.contains("panique"), "{}", h.state().status);
+    h.state_mut().cmd(Command::Stop);
+    h.step();
+    assert!(!h.state().is_debugging());
+}
