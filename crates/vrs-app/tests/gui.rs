@@ -738,3 +738,28 @@ fn ide_debugging() {
     h.step();
     assert!(!h.state().is_debugging());
 }
+
+/// Renommer une fenêtre depuis l'IDE.
+#[test]
+fn rename_form_from_ide() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(app_in(dir.path(), "fr-CA"));
+    h.state_mut()
+        .create_project(ProjectKind::Gui, dir.path(), "Ren");
+    h.run();
+    run_cmd(&mut h, Command::RenameForm("Form1".into()));
+    // Le Modal apparaît avec une courte animation.
+    h.run();
+    assert!(h.state().dialogs.rename_form.is_some(), "boîte non ouverte");
+    assert!(h.query_by_label_contains("Renommer la fenêtre").is_some());
+    h.state_mut().dialogs.rename_form = None;
+    h.state_mut().rename_form("Form1", "Principale");
+    h.run();
+    let app = h.state();
+    let p = app.project.as_ref().unwrap();
+    assert_eq!(p.file.forms, vec!["Principale"]);
+    assert_eq!(p.file.startup_form.as_deref(), Some("Principale"));
+    assert!(matches!(app.active_tab(), Some(Tab::Designer(d)) if d.doc.name == "Principale"));
+    let main_rs = std::fs::read_to_string(p.root.join("src/forms/mod.rs")).unwrap();
+    assert!(main_rs.contains("pub fn startup_form() -> Principale"));
+}

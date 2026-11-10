@@ -167,6 +167,7 @@ impl VrsApp {
             }
             Command::DebugStart => self.start_debugging(),
             Command::ImportImage(control) => self.import_image(control),
+            Command::RenameForm(name) => self.dialogs.rename_form = Some((name.clone(), name)),
             Command::Debug(a) => self.debug_action(a),
             Command::ToggleBreakpoint => {
                 if let Some(Tab::Code(e)) = self.tabs.get_mut(self.active) {
@@ -444,6 +445,51 @@ impl VrsApp {
             });
         }
         self.refresh_tree();
+    }
+
+    /// Renomme une fenêtre (fichiers, type Rust, code utilisateur).
+    pub fn rename_form(&mut self, old: &str, new: &str) {
+        if !self.save_all() {
+            return;
+        }
+        let Some(root) = self.project.as_ref().map(|p| p.root.clone()) else {
+            return;
+        };
+        // Fermer les onglets de cette fenêtre (ils vont changer de nom).
+        let paths = vrs_codegen::form_paths(&root, old);
+        let form_file = self.project.as_ref().map(|p| p.form_path(old));
+        self.tabs.retain(|t| {
+            t.path().is_none_or(|p| {
+                !same_path(p, &paths.user)
+                    && !same_path(p, &paths.designer)
+                    && form_file.as_ref().is_none_or(|f| !same_path(p, f))
+            })
+        });
+        self.active = self.active.min(self.tabs.len().saturating_sub(1));
+        let comments = I18nComments(&self.i18n);
+        let result = self
+            .project
+            .as_mut()
+            .map(|p| p.rename_form(old, new, &comments));
+        match result {
+            Some(Ok(())) => {
+                for t in &mut self.tabs {
+                    if let Tab::Code(e) = t {
+                        e.reload_if_clean();
+                    }
+                }
+                self.lsp_synced.clear();
+                self.refresh_tree();
+                self.open_form(new);
+            }
+            Some(Err(e)) => {
+                let msg = self
+                    .i18n
+                    .trf("error-codegen", &[("error", e.to_string().into())]);
+                self.error(msg);
+            }
+            None => {}
+        }
     }
 
     pub fn refresh_tree(&mut self) {

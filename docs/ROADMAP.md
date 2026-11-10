@@ -37,7 +37,7 @@ phase 5).
 - More events: DoubleClick, Closing/Closed, Resize, KeyDown/KeyUp.
 - Passing data between windows (public fields, dialog return value).
 - Choosing the startup window in the IDE.
-- Renaming a window (files and types).
+- Renaming a window (files and types). ✅
 
 ### Phase 6 — Smart editor ✅
 Done: VRS-aware completion, VB.NET equivalents, quick fixes (VRS hints and
@@ -105,7 +105,7 @@ double-clic (une avance sur la phase 5).
 - Événements supplémentaires : DoubleClick, Closing/Closed, Resize, KeyDown/KeyUp.
 - Transfert de données entre fenêtres (champs publics, valeur de retour d'un dialogue).
 - Choix de la fenêtre de démarrage dans l'IDE.
-- Renommage d'une fenêtre (fichiers et types).
+- Renommage d'une fenêtre (fichiers et types). ✅
 
 ### Phase 6 — Éditeur intelligent ✅
 Fait : autocomplétion propre à VRS, équivalences VB.NET, corrections rapides

@@ -67,4 +67,6 @@ pub enum Command {
     ClearBreakpoints,
     /// Importe une image dans `resources/` (et l'affecte au contrôle donné).
     ImportImage(Option<String>),
+    /// Ouvre la boîte « Renommer la fenêtre ».
+    RenameForm(String),
 }

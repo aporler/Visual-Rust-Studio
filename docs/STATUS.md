@@ -69,7 +69,8 @@
 - **Multiple windows**: native windows (egui viewports) or sub-windows when
   the platform has a single window; simulated modal dialogs (the other windows
   are disabled); Load, Closing (can cancel) and Closed events; startup window
-  and close strategy chosen in the IDE.
+  and close strategy chosen in the IDE; renaming a window updates its files
+  and your code.
 - **Code assistance**: completion while typing or with Ctrl+Space (window
   controls `self.text_box1`, their properties `.text`, `.visible`…, String
   methods, `app.exit()`, `app.set_title()`, Rust keywords and snippets), with a
@@ -103,7 +104,8 @@
 - Panels are resizable but not dockable (egui_dock is not compatible with
   egui 0.37).
 - No bracket matching, no minimap.
-- Renaming a window (Form1 → MainForm) is not possible yet.
+- Not done yet: internationalization of generated applications, extension
+  system, dockable panels, right-to-left languages, Android/iOS targets.
 - Modal dialogs are simulated: the operating system does not treat them as modal.
 - Font family and automatic layouts (flow, table) are not available yet.
 
@@ -176,7 +178,8 @@
 - **Multifenêtre** : fenêtres natives (viewports egui) ou sous-fenêtres si la
   plateforme n'a qu'une fenêtre ; dialogues modaux simulés (les autres
   fenêtres sont désactivées) ; événements Load, Closing (annulable) et
-  Closed ; fenêtre de démarrage et stratégie de fermeture choisies dans l'IDE.
+  Closed ; fenêtre de démarrage et stratégie de fermeture choisies dans
+  l'IDE ; renommer une fenêtre met à jour ses fichiers et votre code.
 - **Aide au code** : autocomplétion pendant la frappe ou avec Ctrl+Espace
   (contrôles de la fenêtre `self.text_box1`, leurs propriétés `.text`,
   `.visible`…, méthodes de String, `app.exit()`, `app.set_title()`, mots-clés
@@ -212,7 +215,9 @@
 - Panneaux redimensionnables mais non ancrables (egui_dock incompatible avec
   egui 0.37).
 - Pas de correspondance des parenthèses ni de minimap.
-- Le renommage d'une fenêtre (Form1 → MainForm) n'est pas encore possible.
+- Pas encore faits : internationalisation des applications générées,
+  système d'extensions, panneaux ancrables, langues de droite à gauche,
+  cibles Android/iOS.
 - Les dialogues modaux sont simulés : le système d'exploitation ne les traite pas comme modaux.
 - La famille de police et les mises en page automatiques (flux, tableau) ne
   sont pas encore disponibles.

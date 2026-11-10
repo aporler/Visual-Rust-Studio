@@ -65,6 +65,8 @@ pub struct Dialogs {
     pub new_project: Option<NewProjectDialog>,
     pub settings: Option<SettingsDialog>,
     pub add_form: Option<String>,
+    /// Renommage d'une fenêtre : (ancien nom, nouveau nom).
+    pub rename_form: Option<(String, String)>,
     pub trust: Option<TrustRequest>,
     pub error: Option<String>,
     pub about: bool,

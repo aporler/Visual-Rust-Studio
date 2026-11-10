@@ -95,6 +95,10 @@ pub fn explorer(app: &mut VrsApp, ui: &mut egui::Ui) {
                                     app.cmd(Command::SetStartupForm(form.clone()));
                                     ui.close();
                                 }
+                                if ui.button(app.i18n.tr("cmd-rename-form")).clicked() {
+                                    app.cmd(Command::RenameForm(form.clone()));
+                                    ui.close();
+                                }
                             });
                         }
                         if ui

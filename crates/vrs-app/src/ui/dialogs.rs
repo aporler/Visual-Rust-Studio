@@ -13,6 +13,7 @@ pub fn dialogs(app: &mut VrsApp, ctx: &egui::Context) {
     new_project(app, ctx);
     settings(app, ctx);
     add_form(app, ctx);
+    rename_form(app, ctx);
     trust(app, ctx);
     unsaved(app, ctx);
     about(app, ctx);
@@ -412,6 +413,55 @@ fn add_form(app: &mut VrsApp, ctx: &egui::Context) {
         app.add_form(&name);
     } else if keep {
         app.dialogs.add_form = Some(name);
+    }
+}
+
+fn rename_form(app: &mut VrsApp, ctx: &egui::Context) {
+    let Some((old, mut name)) = app.dialogs.rename_form.take() else {
+        return;
+    };
+    let mut keep = true;
+    let mut apply = false;
+    let check = if name == old {
+        Err(())
+    } else {
+        app.project
+            .as_ref()
+            .map(|p| p.check_form_name(&name).map_err(|_| ()))
+            .unwrap_or(Err(()))
+    };
+    Modal::new(egui::Id::unique("vrs-rename-form")).show(ctx, |ui| {
+        ui.set_width(380.0);
+        ui.heading(app.i18n.tr("cmd-rename-form"));
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(app.i18n.tr("addform-name"));
+            let r = ui.text_edit_singleline(&mut name);
+            if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) && check.is_ok() {
+                apply = true;
+            }
+        });
+        if check.is_err() && name != old {
+            ui.colored_label(ui.visuals().error_fg_color, app.i18n.tr("addform-invalid"));
+        }
+        ui.weak(app.i18n.tr("rename-form-hint"));
+        ui.separator();
+        buttons_right(ui, |ui| {
+            if ui.button(app.i18n.tr("button-cancel")).clicked() {
+                keep = false;
+            }
+            if ui
+                .add_enabled(check.is_ok(), egui::Button::new(app.i18n.tr("button-ok")))
+                .clicked()
+            {
+                apply = true;
+            }
+        });
+    });
+    if apply {
+        app.rename_form(&old, &name);
+    } else if keep {
+        app.dialogs.rename_form = Some((old, name));
     }
 }
 
