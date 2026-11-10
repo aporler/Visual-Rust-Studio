@@ -201,3 +201,23 @@ fn console_and_library_projects_compile() {
         assert!(ok, "{name} : {stderr}");
     }
 }
+
+/// Chaque exemple compile sans VRS et sans avertissement (textes avec accents,
+/// guillemets et accolades pour vérifier l'échappement).
+#[test]
+#[ignore = "lent : compile les exemples"]
+fn every_example_compiles() {
+    let dir = tempfile::tempdir().unwrap();
+    let tr = |key: &str| format!("Été « {key} » \"x\" {{y}}");
+    for ex in vrs_project::examples::EXAMPLES {
+        let p = vrs_project::examples::create_example(ex.id, dir.path(), &tr, &EnglishComments)
+            .unwrap();
+        let (ok, stderr) = build(&p.root);
+        assert!(ok, "{} :\n{stderr}", ex.id);
+        let warnings: Vec<&str> = stderr
+            .lines()
+            .filter(|l| l.starts_with("warning") && !l.contains("generated"))
+            .collect();
+        assert!(warnings.is_empty(), "{} :\n{stderr}", ex.id);
+    }
+}

@@ -1,0 +1,61 @@
+# Visual Rust Studio — projets d'exemple (Français, Canada)
+
+cmd-examples = Exemples…
+examples-title = Projets d'exemple
+examples-beginner = Débutant
+examples-intermediate = Modéré
+examples-hint = L'exemple est copié dans l'emplacement ci-dessous : vous pouvez le modifier librement.
+
+example-hello-terminal-title = Hello World (terminal)
+example-hello-terminal-desc = Votre premier programme Rust : il écrit une ligne dans la console.
+example-hello-window-title = Hello World (fenêtre)
+example-hello-window-desc = Une fenêtre avec un texte et un bouton qui ferme l'application.
+example-counter-title = Compteur de clics
+example-counter-desc = Une variable de fenêtre (self.data) augmente à chaque clic ; un deuxième bouton la remet à zéro.
+example-temperature-title = Convertisseur de température
+example-temperature-desc = Lit une zone de texte, convertit le texte en nombre et gère les erreurs de saisie (°C vers °F).
+example-todo-title = Liste de tâches
+example-todo-desc = Ajoute et supprime des éléments dans une liste (Vec<String>), avec une petite méthode utilitaire.
+example-guess-title = Devine le nombre
+example-guess-desc = Un nombre secret, des indices « plus grand / plus petit », un compteur d'essais et une boîte de message à la victoire.
+example-two-windows-title = Deux fenêtres
+example-two-windows-desc = Form1 ouvre une boîte de dialogue modale (Form2) qui demande votre nom, puis lit la réponse.
+
+ex-hello = Bonjour, le monde !
+ex-close = Fermer
+ex-reset = Remettre à zéro
+ex-celsius = Température en °C :
+ex-convert = Convertir
+ex-not-a-number = Veuillez saisir un nombre.
+ex-add = Ajouter
+ex-remove = Supprimer
+ex-no-task = 0 tâche
+ex-tasks = tâche(s)
+ex-guess-rules = Je pense à un nombre entre 1 et 100. Saurez-vous le deviner ?
+ex-try = Essayer
+ex-higher = Plus grand !
+ex-lower = Plus petit !
+ex-won = Bravo ! Le nombre était
+ex-tries = Essais
+ex-ask-name = Quel est votre nom ?
+ex-your-name = Votre nom
+ex-cancel = Annuler
+ex-hello-name = Bonjour,
+
+ex-comment-println = println! écrit une ligne dans la console.
+ex-comment-exit = Ferme l'application.
+ex-comment-count = Nombre de clics.
+ex-comment-self-data = Les variables de la fenêtre sont dans self.data (voir Form1Data ci-dessus).
+ex-comment-read-text = Lire le texte saisi (la virgule est acceptée comme séparateur décimal).
+ex-comment-parse = parse() donne Ok(nombre) ou Err(erreur) : les deux cas doivent être traités.
+ex-comment-empty = Rien à ajouter si le texte est vide.
+ex-comment-selected = selected est une Option<usize> : Some(index) si un élément est sélectionné.
+ex-comment-helper = Met à jour l'étiquette qui affiche le nombre de tâches.
+ex-comment-secret = Nombre à deviner.
+ex-comment-tries = Nombre d'essais.
+ex-comment-random = Nombre pseudo-aléatoire simple tiré de l'horloge (sans bibliothèque externe).
+ex-comment-match = match compare la proposition avec le nombre secret.
+ex-comment-new-game = Nouvelle partie.
+ex-comment-dialog = Ouvre Form2 en boîte de dialogue modale ; la fermeture (closure) s'exécute à sa fermeture.
+ex-comment-dialog-result = me est cette fenêtre (Form1), form2 est la boîte de dialogue fermée.
+ex-comment-accepted = true si l'utilisateur a cliqué sur OK.

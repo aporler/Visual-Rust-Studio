@@ -95,6 +95,16 @@ fn start_page(app: &mut VrsApp, ui: &mut egui::Ui) {
                     {
                         app.cmd(Command::OpenProject);
                     }
+                    ui.add_space(6.0);
+                    if ui
+                        .add(big(format!(
+                            "★  {}",
+                            app.i18n.tr("cmd-examples").trim_end_matches('…')
+                        )))
+                        .clicked()
+                    {
+                        app.cmd(Command::ShowExamples);
+                    }
                     ui.add_space(16.0);
                     ui.label(egui::RichText::new(app.i18n.tr("start-learn")).weak());
                 });

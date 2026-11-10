@@ -134,6 +134,8 @@ pub fn uses_images(form: &FormDocument) -> bool {
 /// Génère le fichier du concepteur d'une fenêtre (déjà formaté, avec en-tête).
 pub fn generate_designer(form: &FormDocument) -> String {
     let form_ty = ident(&form.name);
+    let user_mod = ident(&form.module_name());
+    let data_ty = ident(&format!("{}Data", form.name));
     let title = &form.title;
     let (w, h) = (f32_lit(form.width), f32_lit(form.height));
 
@@ -363,6 +365,8 @@ pub fn generate_designer(form: &FormDocument) -> String {
         #[doc = #struct_doc]
         pub struct #form_ty {
             #(#fields,)*
+            /// Variables de la fenêtre (`Form1Data`, déclarée dans votre fichier de code).
+            pub data: super::#user_mod::#data_ty,
             #menu_field
             #(#ctx_fields)*
         }
@@ -371,6 +375,7 @@ pub fn generate_designer(form: &FormDocument) -> String {
             fn default() -> Self {
                 Self {
                     #(#inits,)*
+                    data: Default::default(),
                     #menu_init_field
                     #(#ctx_inits)*
                 }

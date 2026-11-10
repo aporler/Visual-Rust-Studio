@@ -19,11 +19,13 @@ pub(crate) const EMBEDDED: &[(&str, &str, &str)] = &[
     ftl!("en-US", "designer.ftl"),
     ftl!("en-US", "errors.ftl"),
     ftl!("en-US", "editor.ftl"),
+    ftl!("en-US", "examples.ftl"),
     ftl!("en-CA", "main.ftl"),
     ftl!("fr-CA", "main.ftl"),
     ftl!("fr-CA", "designer.ftl"),
     ftl!("fr-CA", "errors.ftl"),
     ftl!("fr-CA", "editor.ftl"),
+    ftl!("fr-CA", "examples.ftl"),
     ftl!("fr-FR", "main.ftl"),
     ftl!("es-ES", "main.ftl"),
 ];

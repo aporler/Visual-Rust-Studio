@@ -20,7 +20,9 @@ use std::path::{Path, PathBuf};
 use vrs_components::FormDocument;
 
 pub use designer::{generate_designer, generate_forms_mod, uses_images};
-pub use user_code::{ensure_handler, ensure_handler_returning, find_fn_line, user_file_skeleton};
+pub use user_code::{
+    ensure_data_struct, ensure_handler, ensure_handler_returning, find_fn_line, user_file_skeleton,
+};
 
 /// Source du runtime copié dans `src/vrs/mod.rs`.
 pub const RUNTIME_SOURCE: &str = include_str!("../../vrs-runtime/src/lib.rs");
@@ -48,6 +50,12 @@ pub trait Comments {
     fn todo(&self) -> String;
     /// Documentation du fichier de code d'une fenêtre.
     fn user_file_doc(&self, form: &str) -> String;
+    /// Documentation de la structure des variables de la fenêtre.
+    fn data_doc(&self) -> String {
+        "Variables of this window (like the variables declared in a VB.NET form). \
+         Add your fields here and use them with `self.data`."
+            .into()
+    }
 }
 
 /// Textes anglais par défaut.
@@ -253,6 +261,21 @@ fn sync_form_into(
     let mut src = original
         .clone()
         .unwrap_or_else(|| user_file_skeleton(form, comments));
+    // Structure des variables de la fenêtre (`Form1Data`), ajoutée si absente.
+    let mut data_added = false;
+    match ensure_data_struct(&src, &form.name, &comments.data_doc()) {
+        Ok(Some(updated)) => {
+            src = updated;
+            data_added = true;
+        }
+        Ok(None) => {}
+        Err(message) => {
+            return Err(CodegenError::UserCode {
+                path: paths.user.clone(),
+                message,
+            });
+        }
+    }
     let mut added = Vec::new();
     for (handler, owner, event) in form.handlers() {
         let owner = owner.unwrap_or_else(|| form.name.clone());
@@ -283,7 +306,7 @@ fn sync_form_into(
             vrs_core::fs::atomic_write(&paths.user, &src)?;
             report.written.push(paths.user.clone());
         }
-        Some(_) if !added.is_empty() => {
+        Some(_) if !added.is_empty() || data_added => {
             if let Some(bak) = vrs_core::fs::backup_file(&paths.user)? {
                 report.backups.push(bak);
             }

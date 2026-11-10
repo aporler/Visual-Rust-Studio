@@ -763,3 +763,40 @@ fn rename_form_from_ide() {
     let main_rs = std::fs::read_to_string(p.root.join("src/forms/mod.rs")).unwrap();
     assert!(main_rs.contains("pub fn startup_form() -> Principale"));
 }
+
+/// Projets d'exemple : la liste s'affiche, chaque exemple se crée et s'ouvre.
+#[test]
+fn examples_dialog_and_creation() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(app_in(dir.path(), "fr-CA"));
+    h.run();
+    run_cmd(&mut h, Command::ShowExamples);
+    h.run();
+    assert!(h.query_by_label_contains("Devine le nombre").is_some());
+    assert!(
+        h.query_by_label_contains("Hello World (terminal)")
+            .is_some()
+    );
+    h.state_mut().dialogs.examples = None;
+    h.state_mut().create_example("hello-window", dir.path());
+    h.run();
+    assert!(matches!(h.state().active_tab(), Some(Tab::Designer(_))));
+    assert!(h.query_by_label("Bonjour, le monde !").is_some());
+    assert!(h.query_by_label("Fermer").is_some());
+    h.state_mut().create_example("hello-terminal", dir.path());
+    h.run();
+    let app = h.state();
+    let Some(Tab::Code(e)) = app.active_tab() else {
+        panic!()
+    };
+    assert!(
+        e.text.contains("println!(\"Bonjour, le monde !\")"),
+        "{}",
+        e.text
+    );
+    assert!(
+        app.i18n.missing_keys().is_empty(),
+        "{:?}",
+        app.i18n.missing_keys()
+    );
+}

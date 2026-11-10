@@ -13,6 +13,7 @@ pub fn dialogs(app: &mut VrsApp, ctx: &egui::Context) {
     new_project(app, ctx);
     settings(app, ctx);
     add_form(app, ctx);
+    examples(app, ctx);
     rename_form(app, ctx);
     trust(app, ctx);
     unsaved(app, ctx);
@@ -413,6 +414,82 @@ fn add_form(app: &mut VrsApp, ctx: &egui::Context) {
         app.add_form(&name);
     } else if keep {
         app.dialogs.add_form = Some(name);
+    }
+}
+
+fn examples(app: &mut VrsApp, ctx: &egui::Context) {
+    use vrs_project::examples::{EXAMPLES, Level};
+    let Some((mut selected, mut location)) = app.dialogs.examples.take() else {
+        return;
+    };
+    let mut keep = true;
+    let mut create = None;
+    Modal::new(egui::Id::unique("vrs-examples")).show(ctx, |ui| {
+        ui.set_width(600.0);
+        ui.heading(app.i18n.tr("examples-title"));
+        ui.separator();
+        for level in [Level::Beginner, Level::Intermediate] {
+            ui.strong(app.i18n.tr(level.i18n_key()));
+            for (i, ex) in EXAMPLES
+                .iter()
+                .enumerate()
+                .filter(|(_, e)| e.level == level)
+            {
+                let r = ui.radio_value(
+                    &mut selected,
+                    i,
+                    RichText::new(app.i18n.tr(&ex.title_key())).strong(),
+                );
+                if r.double_clicked() {
+                    create = Some(i);
+                }
+                ui.indent(("ex", i), |ui| ui.weak(app.i18n.tr(&ex.desc_key())));
+            }
+            ui.add_space(6.0);
+        }
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(app.i18n.tr("newproj-location"));
+            ui.add(egui::TextEdit::singleline(&mut location).desired_width(360.0));
+            if ui.button(app.i18n.tr("button-browse")).clicked()
+                && let Some(dir) = rfd::FileDialog::new()
+                    .set_title(app.i18n.tr("newproj-choose-folder"))
+                    .set_directory(&location)
+                    .pick_folder()
+            {
+                location = dir.display().to_string();
+            }
+        });
+        ui.weak(app.i18n.tr("examples-hint"));
+        ui.separator();
+        buttons_right(ui, |ui| {
+            if ui.button(app.i18n.tr("button-cancel")).clicked() {
+                keep = false;
+            }
+            if ui
+                .add_enabled(
+                    !location.trim().is_empty(),
+                    egui::Button::new(app.i18n.tr("button-create")),
+                )
+                .clicked()
+            {
+                create = Some(selected);
+            }
+        });
+    });
+    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        keep = false;
+    }
+    match create {
+        Some(i) => {
+            let id = EXAMPLES[i].id;
+            let parent = PathBuf::from(location.trim());
+            if std::fs::create_dir_all(&parent).is_ok() {
+                app.create_example(id, &parent);
+            }
+        }
+        None if keep => app.dialogs.examples = Some((selected, location)),
+        None => {}
     }
 }
 

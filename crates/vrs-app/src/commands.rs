@@ -69,4 +69,6 @@ pub enum Command {
     ImportImage(Option<String>),
     /// Ouvre la boîte « Renommer la fenêtre ».
     RenameForm(String),
+    /// Ouvre la liste des projets d'exemple.
+    ShowExamples,
 }

@@ -23,10 +23,46 @@ pub fn user_file_skeleton(form: &FormDocument, comments: &dyn Comments) -> Strin
          use super::{name};\n\
          use crate::vrs::{{AppContext, egui}};\n\
          \n\
+         {data}\n\
          impl {name} {{\n\
          }}\n",
-        name = form.name
+        name = form.name,
+        data = data_struct(&form.name, &comments.data_doc()),
     )
+}
+
+/// Déclaration de la structure des variables d'une fenêtre (`Form1Data`).
+fn data_struct(form: &str, doc: &str) -> String {
+    let doc = doc
+        .lines()
+        .map(|l| format!("/// {l}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!("{doc}\n#[derive(Default)]\npub struct {form}Data {{}}\n")
+}
+
+/// Ajoute `pub struct <Form>Data {}` au code de l'utilisateur s'il n'existe pas
+/// (projets créés avant l'apparition des variables de fenêtre).
+pub fn ensure_data_struct(src: &str, form: &str, doc: &str) -> Result<Option<String>, String> {
+    let file = syn::parse_file(src).map_err(|e| {
+        let start = e.span().start();
+        format!("ligne {}, colonne {} : {e}", start.line, start.column + 1)
+    })?;
+    let name = format!("{form}Data");
+    let exists = file.items.iter().any(|i| match i {
+        syn::Item::Struct(s) => s.ident == name,
+        syn::Item::Type(t) => t.ident == name,
+        syn::Item::Use(_) => false,
+        _ => false,
+    });
+    if exists {
+        return Ok(None);
+    }
+    let mut out = src.trim_end().to_owned();
+    out.push_str("\n\n");
+    out.push_str(&data_struct(form, doc));
+    syn::parse_file(&out).map_err(|e| format!("insertion invalide : {e}"))?;
+    Ok(Some(out))
 }
 
 /// Est-ce un bloc `impl Type { … }` (sans trait) ?

@@ -46,6 +46,7 @@ pub fn menu_bar(app: &mut VrsApp, ui: &mut egui::Ui) {
         ui.menu_button(i18n_menu(app, "menu-file"), |ui| {
             item(app, ui, "cmd-new-project", Command::NewProject, true);
             item(app, ui, "cmd-open-project", Command::OpenProject, true);
+            item(app, ui, "cmd-examples", Command::ShowExamples, true);
             let recent = app.settings.recent_projects.clone();
             ui.add_enabled_ui(!recent.is_empty(), |ui| {
                 ui.menu_button(app.i18n.tr("menu-recent-projects"), |ui| {

@@ -25,6 +25,7 @@
 | `cargo fmt --all -- --check` | clean |
 | `cargo test -p vrs-lsp -- --ignored` and `cargo test -p vrs-app --test gui -- --ignored ide_with_rust_analyzer` | with the real rust-analyzer: completion, hover, definition, diagnostics, rename |
 | `VRS_TEST_DEBUGGER=… cargo test -p vrs-debugger -- --ignored` and `… -p vrs-app --test gui -- --ignored ide_debugging` | with GDB 16: breakpoint, stack, variables, watch, stepping, panic |
+| `cargo test -p vrs-project --test standalone -- --ignored every_example_compiles` | every example project builds without VRS and without warnings |
 | `vrs-i18n-check` | no errors; fr-CA and en-US 100 % complete |
 
 ### MVP acceptance criteria
@@ -66,6 +67,12 @@
   events (Click, TextChanged, CheckedChanged, SelectionChanged, ValueChanged).
   `app.message_box("…")` shows a modal message (MsgBox). Every control has
   BackColor, ForeColor, font size and Anchor (it follows window resizing).
+- **Example projects** (File → Examples, or the start page), with texts and
+  comments in the IDE language. Beginner: Hello World (terminal), Hello World
+  (window), click counter, temperature converter. Intermediate: to-do list,
+  guess the number, two windows. Each one builds without VRS.
+- **Window variables**: each window has a `Form1Data` struct in your code
+  file, used through `self.data` (like the variables of a VB.NET form).
 - **Multiple windows**: native windows (egui viewports) or sub-windows when
   the platform has a single window; simulated modal dialogs (the other windows
   are disabled); Load, Closing (can cancel) and Closed events; startup window
@@ -175,6 +182,14 @@
   ValueChanged). `app.message_box("…")` affiche un message modal (MsgBox).
   Chaque contrôle a BackColor, ForeColor, taille de police et Anchor (il
   suit le redimensionnement de la fenêtre).
+- **Projets d'exemple** (Fichier → Exemples, ou la page de démarrage), avec
+  textes et commentaires dans la langue de l'IDE. Débutant : Hello World
+  (terminal), Hello World (fenêtre), compteur de clics, convertisseur de
+  température. Modéré : liste de tâches, devine le nombre, deux fenêtres.
+  Chacun compile sans VRS.
+- **Variables de fenêtre** : chaque fenêtre a une structure `Form1Data` dans
+  votre fichier de code, utilisée avec `self.data` (comme les variables d'un
+  formulaire VB.NET).
 - **Multifenêtre** : fenêtres natives (viewports egui) ou sous-fenêtres si la
   plateforme n'a qu'une fenêtre ; dialogues modaux simulés (les autres
   fenêtres sont désactivées) ; événements Load, Closing (annulable) et

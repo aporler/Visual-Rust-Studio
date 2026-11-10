@@ -1,0 +1,61 @@
+# Visual Rust Studio — example projects (English, United States)
+
+cmd-examples = Examples…
+examples-title = Example Projects
+examples-beginner = Beginner
+examples-intermediate = Intermediate
+examples-hint = The example is copied into the location below: you can modify it freely.
+
+example-hello-terminal-title = Hello World (terminal)
+example-hello-terminal-desc = Your first Rust program: it writes a line in the console.
+example-hello-window-title = Hello World (window)
+example-hello-window-desc = A window with a text and a button that closes the application.
+example-counter-title = Click counter
+example-counter-desc = A window variable (self.data) increases on each click; a second button resets it.
+example-temperature-title = Temperature converter
+example-temperature-desc = Reads a text box, converts the text to a number and handles input errors (°C to °F).
+example-todo-title = To-do list
+example-todo-desc = Adds and removes items in a list (Vec<String>), with a small helper method.
+example-guess-title = Guess the number
+example-guess-desc = A secret number, "higher / lower" hints, a try counter and a message box when you win.
+example-two-windows-title = Two windows
+example-two-windows-desc = Form1 opens a modal dialog (Form2) that asks for your name, then reads the answer.
+
+ex-hello = Hello, world!
+ex-close = Close
+ex-reset = Reset
+ex-celsius = Temperature in °C:
+ex-convert = Convert
+ex-not-a-number = Please type a number.
+ex-add = Add
+ex-remove = Remove
+ex-no-task = 0 tasks
+ex-tasks = task(s)
+ex-guess-rules = I am thinking of a number between 1 and 100. Can you guess it?
+ex-try = Try
+ex-higher = Higher!
+ex-lower = Lower!
+ex-won = Well done! The number was
+ex-tries = Tries
+ex-ask-name = What is your name?
+ex-your-name = Your name
+ex-cancel = Cancel
+ex-hello-name = Hello,
+
+ex-comment-println = println! writes a line in the console.
+ex-comment-exit = Closes the application.
+ex-comment-count = Number of clicks.
+ex-comment-self-data = Window variables are in self.data (see Form1Data above).
+ex-comment-read-text = Read the text typed by the user (a comma is accepted as decimal separator).
+ex-comment-parse = parse() returns Ok(number) or Err(error): both cases must be handled.
+ex-comment-empty = Nothing to add if the text is empty.
+ex-comment-selected = selected is an Option<usize>: Some(index) if an item is selected.
+ex-comment-helper = Updates the label that shows the number of tasks.
+ex-comment-secret = Number to guess.
+ex-comment-tries = Number of tries.
+ex-comment-random = Simple pseudo-random number from the clock (no external library).
+ex-comment-match = match compares the guess with the secret number.
+ex-comment-new-game = New game.
+ex-comment-dialog = Opens Form2 as a modal dialog; the closure runs when it closes.
+ex-comment-dialog-result = me is this window (Form1), form2 is the closed dialog.
+ex-comment-accepted = true if the user clicked OK.

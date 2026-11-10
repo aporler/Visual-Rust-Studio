@@ -167,6 +167,14 @@ impl VrsApp {
             }
             Command::DebugStart => self.start_debugging(),
             Command::ImportImage(control) => self.import_image(control),
+            Command::ShowExamples => {
+                let location = self
+                    .settings
+                    .projects_dir
+                    .clone()
+                    .unwrap_or_else(vrs_settings::default_projects_dir);
+                self.dialogs.examples = Some((0, location.display().to_string()));
+            }
             Command::RenameForm(name) => self.dialogs.rename_form = Some((name.clone(), name)),
             Command::Debug(a) => self.debug_action(a),
             Command::ToggleBreakpoint => {
@@ -340,6 +348,35 @@ impl VrsApp {
                 self.settings.projects_dir = Some(parent.to_path_buf());
                 let name = p.name().to_owned();
                 self.set_project(p);
+                self.status = self
+                    .i18n
+                    .trf("status-project-created", &[("name", name.into())]);
+            }
+            Err(e) => {
+                let msg = self
+                    .i18n
+                    .trf("error-create-project", &[("error", e.to_string().into())]);
+                self.error(msg);
+            }
+        }
+    }
+
+    /// Crée un projet d'exemple et l'ouvre.
+    pub fn create_example(&mut self, id: &str, parent: &Path) {
+        let comments = I18nComments(&self.i18n);
+        let i18n = &self.i18n;
+        let tr = |k: &str| i18n.tr(k);
+        match vrs_project::examples::create_example(id, parent, &tr, &comments) {
+            Ok(p) => {
+                self.created_here.insert(p.root.clone());
+                self.settings.trust(&p.root);
+                self.settings.projects_dir = Some(parent.to_path_buf());
+                let name = p.name().to_owned();
+                let main = (!p.is_gui()).then(|| p.root.join("src/main.rs"));
+                self.set_project(p);
+                if let Some(m) = main {
+                    self.open_file(&m, None);
+                }
                 self.status = self
                     .i18n
                     .trf("status-project-created", &[("name", name.into())]);

@@ -69,4 +69,7 @@ impl vrs_codegen::Comments for I18nComments<'_> {
         self.0
             .trf("codegen-user-file-doc", &[("form", form.into())])
     }
+    fn data_doc(&self) -> String {
+        self.0.tr("codegen-data-doc")
+    }
 }
