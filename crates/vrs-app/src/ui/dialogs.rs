@@ -428,25 +428,29 @@ fn examples(app: &mut VrsApp, ctx: &egui::Context) {
         ui.set_width(600.0);
         ui.heading(app.i18n.tr("examples-title"));
         ui.separator();
-        for level in [Level::Beginner, Level::Intermediate] {
-            ui.strong(app.i18n.tr(level.i18n_key()));
-            for (i, ex) in EXAMPLES
-                .iter()
-                .enumerate()
-                .filter(|(_, e)| e.level == level)
-            {
-                let r = ui.radio_value(
-                    &mut selected,
-                    i,
-                    RichText::new(app.i18n.tr(&ex.title_key())).strong(),
-                );
-                if r.double_clicked() {
-                    create = Some(i);
+        egui::ScrollArea::vertical()
+            .max_height(440.0)
+            .show(ui, |ui| {
+                for level in [Level::Beginner, Level::Intermediate, Level::Advanced] {
+                    ui.strong(app.i18n.tr(level.i18n_key()));
+                    for (i, ex) in EXAMPLES
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, e)| e.level == level)
+                    {
+                        let r = ui.radio_value(
+                            &mut selected,
+                            i,
+                            RichText::new(app.i18n.tr(&ex.title_key())).strong(),
+                        );
+                        if r.double_clicked() {
+                            create = Some(i);
+                        }
+                        ui.indent(("ex", i), |ui| ui.weak(app.i18n.tr(&ex.desc_key())));
+                    }
+                    ui.add_space(6.0);
                 }
-                ui.indent(("ex", i), |ui| ui.weak(app.i18n.tr(&ex.desc_key())));
-            }
-            ui.add_space(6.0);
-        }
+            });
         ui.separator();
         ui.horizontal(|ui| {
             ui.label(app.i18n.tr("newproj-location"));

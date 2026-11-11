@@ -1,0 +1,6 @@
+# Projet Visual Rust Studio. Ce fichier n'est pas nécessaire pour compiler avec Cargo.
+
+vrs_format = 1
+name = "HelloWorldTerminal"
+kind = "console"
+close_strategy = "main_form_closes"

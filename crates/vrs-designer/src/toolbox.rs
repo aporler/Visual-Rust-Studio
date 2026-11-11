@@ -20,6 +20,7 @@ fn icon(kind: ComponentKind) -> &'static str {
         ComponentKind::Panel => "🗋",
         ComponentKind::PictureBox => "📷",
         ComponentKind::TabControl => "📁",
+        ComponentKind::Timer => "⟳",
     }
 }
 

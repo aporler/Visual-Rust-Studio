@@ -1,0 +1,68 @@
+// Visual Rust Studio — conception de la fenêtre Form1.
+// Métadonnées de présentation uniquement (aucun code). Modifiées par le concepteur.
+FormDocument(
+    format_version: 1,
+    name: "Form1",
+    title: "Address book",
+    width: 440.0,
+    height: 300.0,
+    controls: [
+        Control(
+            name: "list_box1",
+            kind: ListBox,
+            x: 16.0,
+            y: 16.0,
+            width: 280.0,
+            height: 260.0,
+            text: "",
+            visible: true,
+            enabled: true,
+            anchor: Anchor(
+                left: true,
+                top: true,
+                right: true,
+                bottom: true,
+            ),
+        ),
+        Control(
+            name: "button1",
+            kind: Button,
+            x: 310.0,
+            y: 16.0,
+            width: 110.0,
+            height: 28.0,
+            text: "Add",
+            visible: true,
+            enabled: true,
+            events: {
+                Click: "button1_click",
+            },
+            anchor: Anchor(
+                left: false,
+                top: true,
+                right: true,
+                bottom: false,
+            ),
+        ),
+        Control(
+            name: "button2",
+            kind: Button,
+            x: 310.0,
+            y: 56.0,
+            width: 110.0,
+            height: 28.0,
+            text: "Remove",
+            visible: true,
+            enabled: true,
+            events: {
+                Click: "button2_click",
+            },
+            anchor: Anchor(
+                left: false,
+                top: true,
+                right: true,
+                bottom: false,
+            ),
+        ),
+    ],
+)

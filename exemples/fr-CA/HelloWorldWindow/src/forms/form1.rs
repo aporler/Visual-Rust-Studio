@@ -1,0 +1,16 @@
+//! Une fenêtre avec un texte et un bouton qui ferme l'application.
+#![allow(unused_imports, unused_variables)]
+
+use super::Form1;
+use crate::vrs::{AppContext, egui};
+
+#[derive(Default)]
+pub struct Form1Data {}
+
+impl Form1 {
+    /// Gère l'événement Click de `button1`.
+    pub fn button1_click(&mut self, app: &mut AppContext) {
+        // Ferme l'application.
+        app.exit();
+    }
+}

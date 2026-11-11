@@ -1,0 +1,51 @@
+// Visual Rust Studio — conception de la fenêtre Form1.
+// Métadonnées de présentation uniquement (aucun code). Modifiées par le concepteur.
+FormDocument(
+    format_version: 1,
+    name: "Form1",
+    title: "Click counter",
+    width: 360.0,
+    height: 200.0,
+    controls: [
+        Control(
+            name: "label1",
+            kind: Label,
+            x: 24.0,
+            y: 24.0,
+            width: 300.0,
+            height: 60.0,
+            text: "0",
+            visible: true,
+            enabled: true,
+            font_size: Some(40.0),
+        ),
+        Control(
+            name: "button1",
+            kind: Button,
+            x: 24.0,
+            y: 110.0,
+            width: 96.0,
+            height: 28.0,
+            text: "+1",
+            visible: true,
+            enabled: true,
+            events: {
+                Click: "button1_click",
+            },
+        ),
+        Control(
+            name: "button2",
+            kind: Button,
+            x: 152.0,
+            y: 110.0,
+            width: 150.0,
+            height: 28.0,
+            text: "Reset",
+            visible: true,
+            enabled: true,
+            events: {
+                Click: "button2_click",
+            },
+        ),
+    ],
+)

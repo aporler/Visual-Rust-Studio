@@ -55,6 +55,11 @@ To check a translation:
 cargo run -p vrs-i18n --bin vrs-i18n-check -- path/to/locales
 ```
 
+### Examples
+
+14 example projects, from beginner to advanced, are in [exemples/](exemples/)
+(English and French) and in **File → Examples…** in the IDE.
+
 ### Documentation
 
 - [Architecture and technology choices](docs/ARCHITECTURE.md)
@@ -137,6 +142,12 @@ fichiers dans le dossier de configuration (affiché dans les paramètres), sous
 ```sh
 cargo run -p vrs-i18n --bin vrs-i18n-check -- chemin/vers/locales
 ```
+
+### Exemples
+
+14 projets d'exemple, du niveau débutant à avancé, se trouvent dans
+[exemples/](exemples/) (anglais et français) et dans **Fichier → Exemples…**
+dans l'IDE.
 
 ### Documentation
 

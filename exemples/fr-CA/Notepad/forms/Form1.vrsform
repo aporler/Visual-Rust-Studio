@@ -1,0 +1,58 @@
+// Visual Rust Studio — conception de la fenêtre Form1.
+// Métadonnées de présentation uniquement (aucun code). Modifiées par le concepteur.
+FormDocument(
+    format_version: 1,
+    name: "Form1",
+    title: "Bloc-notes",
+    width: 560.0,
+    height: 400.0,
+    controls: [
+        Control(
+            name: "text_box1",
+            kind: TextBox,
+            x: 8.0,
+            y: 8.0,
+            width: 544.0,
+            height: 330.0,
+            text: "",
+            visible: true,
+            enabled: true,
+            anchor: Anchor(
+                left: true,
+                top: true,
+                right: true,
+                bottom: true,
+            ),
+            multiline: true,
+        ),
+        Control(
+            name: "label1",
+            kind: Label,
+            x: 8.0,
+            y: 346.0,
+            width: 540.0,
+            height: 20.0,
+            text: "",
+            visible: true,
+            enabled: true,
+            anchor: Anchor(
+                left: true,
+                top: false,
+                right: true,
+                bottom: true,
+            ),
+        ),
+    ],
+    menu: [
+        MenuItem(
+            name: "menu_fichier",
+            text: "Fichier",
+            children: [
+                MenuItem(name: "menu_nouveau", text: "Nouveau", click: Some("menu_nouveau_click")),
+                MenuItem(name: "menu_ouvrir", text: "Ouvrir", click: Some("menu_ouvrir_click")),
+                MenuItem(name: "menu_enregistrer", text: "Enregistrer", click: Some("menu_enregistrer_click")),
+                MenuItem(name: "menu_quitter", text: "Quitter", click: Some("menu_quitter_click")),
+            ],
+        ),
+    ],
+)

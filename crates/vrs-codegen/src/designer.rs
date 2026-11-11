@@ -54,6 +54,14 @@ fn state_init(c: &Control) -> TokenStream {
         };
         extra.push(quote!(items: vec![#(#items),*], selected: #selected,));
     }
+    if c.kind.has(Feature::Multiline) {
+        let m = c.multiline;
+        extra.push(quote!(multiline: #m,));
+    }
+    if c.kind.has(Feature::Interval) {
+        let ms = c.interval.max(1);
+        extra.push(quote!(interval_ms: #ms, last_tick: None,));
+    }
     if c.kind.has(Feature::Image) {
         if c.image.is_empty() {
             extra.push(quote!(image: None,));
@@ -110,7 +118,8 @@ fn event_condition(event: EventKind) -> Option<TokenStream> {
         EventKind::TextChanged
         | EventKind::CheckedChanged
         | EventKind::SelectionChanged
-        | EventKind::ValueChanged => Some(quote!(changed())),
+        | EventKind::ValueChanged
+        | EventKind::Tick => Some(quote!(changed())),
         EventKind::Load | EventKind::Closing | EventKind::Closed => None,
     }
 }

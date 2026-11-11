@@ -276,6 +276,8 @@ pub struct TextBoxState {
     pub font_size: Option<f32>,
     /// Côtés de la fenêtre auxquels le contrôle reste attaché.
     pub anchor: Anchor,
+    /// Plusieurs lignes (Multiline).
+    pub multiline: bool,
 }
 
 /// État d'une case à cocher (`CheckBox`).
@@ -479,6 +481,30 @@ pub struct TabControlState {
     pub selected: usize,
 }
 
+/// Minuterie (`Timer`) : déclenche l'événement Tick toutes les `interval_ms`
+/// millisecondes quand `enabled` vaut `true`. Invisible à l'exécution.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TimerState {
+    pub text: String,
+    pub bounds: Bounds,
+    pub visible: bool,
+    /// Active ou arrête la minuterie (`Start` / `Stop` en VB.NET).
+    pub enabled: bool,
+    pub tooltip: String,
+    /// Couleur de fond (`None` : couleur du thème).
+    pub back_color: Option<Color>,
+    /// Couleur du texte (`None` : couleur du thème).
+    pub fore_color: Option<Color>,
+    /// Taille de la police en points (`None` : taille par défaut).
+    pub font_size: Option<f32>,
+    /// Côtés de la fenêtre auxquels le contrôle reste attaché.
+    pub anchor: Anchor,
+    /// Intervalle entre deux Tick, en millisecondes.
+    pub interval_ms: u32,
+    /// Instant du dernier Tick (secondes, horloge d'egui).
+    pub last_tick: Option<f64>,
+}
+
 macro_rules! impl_state_new {
     ($($t:ident { $($f:ident : $v:expr),* }),* $(,)?) => {$(
         impl $t {
@@ -503,7 +529,7 @@ macro_rules! impl_state_new {
 impl_state_new!(
     ButtonState {},
     LabelState {},
-    TextBoxState {},
+    TextBoxState { multiline: false },
     CheckBoxState { checked: false },
     RadioButtonState {
         checked: false,
@@ -533,6 +559,10 @@ impl_state_new!(
     TabControlState {
         pages: Vec::new(),
         selected: 0
+    },
+    TimerState {
+        interval_ms: 1000,
+        last_tick: None
     },
 );
 
@@ -689,17 +719,31 @@ pub fn text_box(ui: &mut egui::Ui, id_salt: &str, state: &mut TextBoxState) -> e
         look,
         egui::Layout::centered_and_justified(egui::Direction::TopDown),
         |ui| {
-            let mut t = egui::TextEdit::singleline(&mut state.text)
-                .id_salt(id_salt)
-                .desired_width(f32::INFINITY)
-                .text_color_opt(fore);
+            let multiline = state.multiline;
+            let mut t = if multiline {
+                egui::TextEdit::multiline(&mut state.text)
+            } else {
+                egui::TextEdit::singleline(&mut state.text)
+            }
+            .id_salt(id_salt)
+            .desired_width(f32::INFINITY)
+            .text_color_opt(fore);
             if let Some(c) = back {
                 t = t.background_color(c);
             }
             if let Some(s) = size {
                 t = t.font(egui::FontId::proportional(s));
             }
-            ui.add(t)
+            if multiline {
+                let avail = ui.available_size();
+                egui::ScrollArea::vertical()
+                    .id_salt(id_salt)
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| ui.add_sized(avail, t))
+                    .inner
+            } else {
+                ui.add(t)
+            }
         },
     );
     with_tooltip(r, &state.tooltip)
@@ -1024,6 +1068,31 @@ pub fn tab_control(
         r.mark_changed();
     }
     with_tooltip(r, &state.tooltip)
+}
+
+/// Fait avancer une minuterie. `response.changed()` indique un Tick.
+pub fn timer(ui: &mut egui::Ui, id_salt: &str, state: &mut TimerState) -> egui::Response {
+    let mut r = hidden(ui, id_salt);
+    if !state.enabled {
+        state.last_tick = None;
+        return r;
+    }
+    let now = ui.input(|i| i.time);
+    let interval = f64::from(state.interval_ms.max(1)) / 1000.0;
+    match state.last_tick {
+        None => state.last_tick = Some(now),
+        Some(t) if now - t >= interval => {
+            state.last_tick = Some(now);
+            r.mark_changed();
+        }
+        Some(_) => {}
+    }
+    let remaining = state
+        .last_tick
+        .map_or(interval, |t| (t + interval - now).max(0.0));
+    ui.ctx()
+        .request_repaint_after(std::time::Duration::from_secs_f64(remaining));
+    r
 }
 
 /// Boîte de message (MsgBox) ouverte par [`AppContext::message_box`].
@@ -1976,6 +2045,31 @@ mod tests {
             })
             .unwrap();
         assert_eq!(clicked.as_deref(), Some("menu_quitter"));
+    }
+
+    #[test]
+    fn timer_ticks_only_when_enabled() {
+        let mut t = TimerState::new("", Bounds::new(0.0, 0.0, 1.0, 1.0));
+        t.interval_ms = 100;
+        let mut ticks = 0;
+        let mut ctx_time = 0.0;
+        let ctx = egui::Context::default();
+        for step in 0..30 {
+            let input = egui::RawInput {
+                time: Some(ctx_time),
+                ..Default::default()
+            };
+            t.enabled = step >= 5;
+            let mut out = ctx.run_ui(input, |ui| {
+                if timer(ui, "t", &mut t).changed() {
+                    ticks += 1;
+                }
+            });
+            out.textures_delta.clear();
+            ctx_time += 0.05;
+        }
+        // 25 images actives × 50 ms ≈ 1,25 s → 12 Tick environ.
+        assert!((10..=13).contains(&ticks), "{ticks}");
     }
 
     #[test]

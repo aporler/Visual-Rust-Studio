@@ -383,6 +383,12 @@ fn members(path: &str, ctx: &CompletionContext) -> Vec<CompletionItem> {
                         "api-selected-text",
                     ),
                 ],
+                "Timer" => &[(
+                    "interval_ms",
+                    "interval_ms",
+                    ItemKind::Field,
+                    "api-interval",
+                )],
                 "TabControl" => &[
                     ("pages", "pages", ItemKind::Field, "api-pages"),
                     ("selected", "selected", ItemKind::Field, "api-selected-page"),

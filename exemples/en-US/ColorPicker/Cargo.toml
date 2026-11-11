@@ -1,0 +1,11 @@
+[package]
+name = "color-picker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+eframe = "0.37"
+
+# Optimise les dépendances (egui) même en mode Debug : l'interface reste fluide.
+[profile.dev.package."*"]
+opt-level = 2

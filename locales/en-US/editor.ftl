@@ -83,3 +83,4 @@ api-anchor = Sides the control stays attached to: `vrs::Anchor::new(left, top, r
 api-image = Image displayed (`Option<egui::ImageSource>`), embedded in the program with `egui::include_image!`.
 api-pages = Page titles (Vec<String>).
 api-selected-page = Index of the page displayed (usize).
+api-interval = Interval between two Tick events, in milliseconds (u32). Start or stop with `enabled`.

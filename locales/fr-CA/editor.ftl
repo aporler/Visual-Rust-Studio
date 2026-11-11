@@ -83,3 +83,4 @@ api-anchor = Côtés auxquels le contrôle reste attaché : `vrs::Anchor::new(ga
 api-image = Image affichée (`Option<egui::ImageSource>`), intégrée au programme avec `egui::include_image!`.
 api-pages = Titres des pages (Vec<String>).
 api-selected-page = Index de la page affichée (usize).
+api-interval = Intervalle entre deux Tick, en millisecondes (u32). Démarrer ou arrêter avec `enabled`.

@@ -482,6 +482,21 @@ fn control_properties(
                     },
                 );
             }
+            if c.kind.has(Feature::Multiline) {
+                row(ui, i18n.tr("prop-multiline"), |ui| {
+                    ui.checkbox(&mut c.multiline, "");
+                });
+            }
+            if c.kind.has(Feature::Interval) {
+                row(ui, i18n.tr("prop-interval"), |ui| {
+                    ui.add(
+                        DragValue::new(&mut c.interval)
+                            .range(1..=3_600_000)
+                            .speed(10.0)
+                            .suffix(" ms"),
+                    );
+                });
+            }
             if c.kind.has(Feature::Image) {
                 row(ui, i18n.tr("prop-image"), |ui| {
                     let none = i18n.tr("events-none");

@@ -76,6 +76,23 @@ pub struct Control {
     pub parent: Option<String>,
     #[serde(default, skip_serializing_if = "is_zero_usize")]
     pub page: usize,
+    /// Timer : intervalle en millisecondes.
+    #[serde(
+        default = "default_interval",
+        skip_serializing_if = "is_default_interval"
+    )]
+    pub interval: u32,
+    /// TextBox : plusieurs lignes.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub multiline: bool,
+}
+
+fn default_interval() -> u32 {
+    1000
+}
+
+fn is_default_interval(v: &u32) -> bool {
+    *v == 1000
 }
 
 fn is_zero_usize(v: &usize) -> bool {
@@ -159,6 +176,8 @@ impl Control {
             context_menu: Vec::new(),
             parent: None,
             page: 0,
+            interval: 1000,
+            multiline: false,
         }
     }
 
@@ -451,6 +470,9 @@ impl FormDocument {
         if kind == ComponentKind::TabControl {
             c.items = vec!["Page 1".into(), "Page 2".into()];
             c.selected = Some(0);
+        } else if kind == ComponentKind::Timer {
+            // Comme dans Windows Forms, un Timer est arrêté au départ.
+            c.enabled = false;
         } else {
             self.assign_parent(&mut c);
         }

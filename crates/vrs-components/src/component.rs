@@ -18,6 +18,7 @@ pub enum ComponentKind {
     Panel,
     PictureBox,
     TabControl,
+    Timer,
 }
 
 /// Propriétés propres à certains composants (en plus de Name, Text, position…).
@@ -35,11 +36,15 @@ pub enum Feature {
     Value,
     /// Image du projet (`image`).
     Image,
+    /// Intervalle en millisecondes (`interval`).
+    Interval,
+    /// Plusieurs lignes (`multiline`).
+    Multiline,
 }
 
 impl ComponentKind {
     /// Tous les composants, dans l'ordre de la boîte à outils.
-    pub const ALL: [ComponentKind; 13] = [
+    pub const ALL: [ComponentKind; 14] = [
         Self::Button,
         Self::Label,
         Self::TextBox,
@@ -53,6 +58,7 @@ impl ComponentKind {
         Self::Panel,
         Self::PictureBox,
         Self::TabControl,
+        Self::Timer,
     ];
 
     /// Nom du type (identique au nom anglais de Windows Forms).
@@ -71,6 +77,7 @@ impl ComponentKind {
             Self::Panel => "Panel",
             Self::PictureBox => "PictureBox",
             Self::TabControl => "TabControl",
+            Self::Timer => "Timer",
         }
     }
 
@@ -90,6 +97,7 @@ impl ComponentKind {
             Self::Panel => "panel",
             Self::PictureBox => "picture_box",
             Self::TabControl => "tab_control",
+            Self::Timer => "timer",
         }
     }
 
@@ -109,6 +117,7 @@ impl ComponentKind {
             Self::Panel => "PanelState",
             Self::PictureBox => "PictureBoxState",
             Self::TabControl => "TabControlState",
+            Self::Timer => "TimerState",
         }
     }
 
@@ -128,6 +137,7 @@ impl ComponentKind {
                 | Self::ListBox
                 | Self::Slider
                 | Self::TabControl
+                | Self::Timer
         )
     }
 
@@ -156,6 +166,7 @@ impl ComponentKind {
             Self::Panel => (200.0, 120.0),
             Self::PictureBox => (120.0, 90.0),
             Self::TabControl => (280.0, 180.0),
+            Self::Timer => (64.0, 24.0),
         }
     }
 
@@ -175,7 +186,8 @@ impl ComponentKind {
     /// Propriétés propres au composant.
     pub fn features(self) -> &'static [Feature] {
         match self {
-            Self::Button | Self::Label | Self::TextBox | Self::GroupBox => &[Feature::Text],
+            Self::TextBox => &[Feature::Text, Feature::Multiline],
+            Self::Button | Self::Label | Self::GroupBox => &[Feature::Text],
             Self::CheckBox => &[Feature::Text, Feature::Checked],
             Self::RadioButton => &[Feature::Text, Feature::Checked, Feature::Group],
             Self::ComboBox | Self::ListBox => &[Feature::Items],
@@ -183,6 +195,7 @@ impl ComponentKind {
             Self::Panel => &[],
             Self::PictureBox => &[Feature::Image],
             Self::TabControl => &[Feature::Items],
+            Self::Timer => &[Feature::Interval],
         }
     }
 
@@ -199,6 +212,7 @@ impl ComponentKind {
             Self::ComboBox | Self::ListBox => &[EventKind::SelectionChanged],
             Self::Slider => &[EventKind::ValueChanged],
             Self::TabControl => &[EventKind::SelectionChanged],
+            Self::Timer => &[EventKind::Tick],
             Self::ProgressBar | Self::GroupBox | Self::Panel => &[],
         }
     }
@@ -206,6 +220,11 @@ impl ComponentKind {
     /// Événement ouvert par un double-clic dans le concepteur.
     pub fn default_event(self) -> Option<EventKind> {
         self.events().first().copied()
+    }
+
+    /// Composant sans affichage à l'exécution (Timer).
+    pub fn is_invisible_at_runtime(self) -> bool {
+        self == Self::Timer
     }
 
     /// Conteneur visuel (dessiné derrière les autres contrôles).
@@ -234,6 +253,8 @@ pub enum EventKind {
     SelectionChanged,
     /// Valeur changée (curseur).
     ValueChanged,
+    /// Intervalle écoulé (Timer).
+    Tick,
 }
 
 impl EventKind {
@@ -251,6 +272,7 @@ impl EventKind {
             Self::CheckedChanged => "CheckedChanged",
             Self::SelectionChanged => "SelectionChanged",
             Self::ValueChanged => "ValueChanged",
+            Self::Tick => "Tick",
         }
     }
 
@@ -265,6 +287,7 @@ impl EventKind {
             Self::CheckedChanged => "checked_changed",
             Self::SelectionChanged => "selection_changed",
             Self::ValueChanged => "value_changed",
+            Self::Tick => "tick",
         }
     }
 
@@ -279,6 +302,7 @@ impl EventKind {
             Self::CheckedChanged => "event-checked-changed",
             Self::SelectionChanged => "event-selection-changed",
             Self::ValueChanged => "event-value-changed",
+            Self::Tick => "event-tick",
         }
     }
 

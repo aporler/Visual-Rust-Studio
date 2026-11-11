@@ -85,6 +85,7 @@ fn render_control(ui: &mut egui::Ui, c: &mut Control, root: &std::path::Path) ->
         ComponentKind::Label => rt::label(ui, &name, &state!(LabelState)),
         ComponentKind::TextBox => {
             let mut s = state!(TextBoxState);
+            s.multiline = c.multiline;
             let r = rt::text_box(ui, &name, &mut s);
             c.text = s.text;
             r
@@ -140,6 +141,29 @@ fn render_control(ui: &mut egui::Ui, c: &mut Control, root: &std::path::Path) ->
             let r = rt::tab_control(ui, &name, &mut s);
             c.selected = Some(s.selected);
             r
+        }
+        ComponentKind::Timer => {
+            // Invisible à l'exécution : simple pastille dans le concepteur.
+            let rect = egui::Rect::from_min_size(
+                ui.max_rect().min + egui::vec2(c.x, c.y),
+                egui::vec2(c.width, c.height),
+            );
+            let v = ui.visuals().clone();
+            ui.painter().rect(
+                rect,
+                4.0,
+                v.faint_bg_color,
+                v.widgets.noninteractive.bg_stroke,
+                egui::StrokeKind::Inside,
+            );
+            ui.painter().text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                format!("⟳ {}", c.name),
+                egui::FontId::proportional(11.0),
+                v.weak_text_color(),
+            );
+            ui.interact(rect, ui.scope_id().with(&name), egui::Sense::hover())
         }
         ComponentKind::PictureBox => {
             let mut s = state!(PictureBoxState);

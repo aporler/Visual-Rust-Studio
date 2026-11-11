@@ -1,0 +1,61 @@
+// Visual Rust Studio — conception de la fenêtre Form2.
+// Métadonnées de présentation uniquement (aucun code). Modifiées par le concepteur.
+FormDocument(
+    format_version: 1,
+    name: "Form2",
+    title: "Votre nom",
+    width: 320.0,
+    height: 150.0,
+    controls: [
+        Control(
+            name: "label1",
+            kind: Label,
+            x: 16.0,
+            y: 16.0,
+            width: 96.0,
+            height: 20.0,
+            text: "Votre nom",
+            visible: true,
+            enabled: true,
+        ),
+        Control(
+            name: "text_box1",
+            kind: TextBox,
+            x: 16.0,
+            y: 44.0,
+            width: 280.0,
+            height: 24.0,
+            text: "",
+            visible: true,
+            enabled: true,
+        ),
+        Control(
+            name: "button1",
+            kind: Button,
+            x: 16.0,
+            y: 96.0,
+            width: 96.0,
+            height: 28.0,
+            text: "OK",
+            visible: true,
+            enabled: true,
+            events: {
+                Click: "button1_click",
+            },
+        ),
+        Control(
+            name: "button2",
+            kind: Button,
+            x: 124.0,
+            y: 96.0,
+            width: 96.0,
+            height: 28.0,
+            text: "Annuler",
+            visible: true,
+            enabled: true,
+            events: {
+                Click: "button2_click",
+            },
+        ),
+    ],
+)

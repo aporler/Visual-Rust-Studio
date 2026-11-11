@@ -61,16 +61,19 @@
   groups), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
   PictureBox (images copied to `resources/` and embedded in the program),
   menu bar (MenuStrip, edited as an outline, Click event per item),
-  context menu (right click) on every control, TabControl (controls dropped
+  context menu (right click) on every control, Timer (Tick event),
+  multiline TextBox, TabControl (controls dropped
   on a page belong to it and move with it), with their
   own properties (Checked, Items, Selected, Value, Minimum, Maximum, Group) and
   events (Click, TextChanged, CheckedChanged, SelectionChanged, ValueChanged).
   `app.message_box("…")` shows a modal message (MsgBox). Every control has
   BackColor, ForeColor, font size and Anchor (it follows window resizing).
 - **Example projects** (File → Examples, or the start page), with texts and
-  comments in the IDE language. Beginner: Hello World (terminal), Hello World
-  (window), click counter, temperature converter. Intermediate: to-do list,
-  guess the number, two windows. Each one builds without VRS.
+  comments in the IDE language; also in the repository under `exemples/`
+  (en-US and fr-CA). Beginner: Hello World (terminal and window), click
+  counter, temperature converter, calculator, color picker, Rust quiz.
+  Intermediate: to-do list, guess the number, two windows, stopwatch, address
+  book. Advanced: tic-tac-toe, notepad. Each one builds without VRS.
 - **Window variables**: each window has a `Form1Data` struct in your code
   file, used through `self.data` (like the variables of a VB.NET form).
 - **Multiple windows**: native windows (egui viewports) or sub-windows when
@@ -174,7 +177,8 @@
   exclusifs), ComboBox, ListBox, ProgressBar, Slider, GroupBox, Panel,
   PictureBox (images copiées dans `resources/` et intégrées au programme),
   barre de menus (MenuStrip, éditée sous forme de plan, événement Click par
-  élément), menu contextuel (clic droit) sur chaque contrôle, TabControl (les
+  élément), menu contextuel (clic droit) sur chaque contrôle, Timer
+  (événement Tick), TextBox multiligne, TabControl (les
   contrôles déposés sur une page lui appartiennent et suivent ses
   déplacements), avec
   leurs propriétés (Checked, Items, Selected, Value, Minimum, Maximum, Group)
@@ -183,9 +187,11 @@
   Chaque contrôle a BackColor, ForeColor, taille de police et Anchor (il
   suit le redimensionnement de la fenêtre).
 - **Projets d'exemple** (Fichier → Exemples, ou la page de démarrage), avec
-  textes et commentaires dans la langue de l'IDE. Débutant : Hello World
-  (terminal), Hello World (fenêtre), compteur de clics, convertisseur de
-  température. Modéré : liste de tâches, devine le nombre, deux fenêtres.
+  textes et commentaires dans la langue de l'IDE ; aussi dans le dépôt sous
+  `exemples/` (en-US et fr-CA). Débutant : Hello World (terminal et fenêtre),
+  compteur de clics, convertisseur de température, calculatrice, sélecteur de
+  couleur, quiz Rust. Modéré : liste de tâches, devine le nombre, deux
+  fenêtres, chronomètre, carnet d'adresses. Avancé : tic-tac-toe, bloc-notes.
   Chacun compile sans VRS.
 - **Variables de fenêtre** : chaque fenêtre a une structure `Form1Data` dans
   votre fichier de code, utilisée avec `self.data` (comme les variables d'un

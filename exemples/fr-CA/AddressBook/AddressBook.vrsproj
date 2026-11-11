@@ -1,0 +1,11 @@
+# Projet Visual Rust Studio. Ce fichier n'est pas nécessaire pour compiler avec Cargo.
+
+vrs_format = 1
+name = "AddressBook"
+kind = "gui"
+startup_form = "Form1"
+forms = [
+    "Form1",
+    "Form2",
+]
+close_strategy = "main_form_closes"

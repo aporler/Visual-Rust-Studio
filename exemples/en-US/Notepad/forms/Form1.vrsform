@@ -1,0 +1,58 @@
+// Visual Rust Studio — conception de la fenêtre Form1.
+// Métadonnées de présentation uniquement (aucun code). Modifiées par le concepteur.
+FormDocument(
+    format_version: 1,
+    name: "Form1",
+    title: "Notepad",
+    width: 560.0,
+    height: 400.0,
+    controls: [
+        Control(
+            name: "text_box1",
+            kind: TextBox,
+            x: 8.0,
+            y: 8.0,
+            width: 544.0,
+            height: 330.0,
+            text: "",
+            visible: true,
+            enabled: true,
+            anchor: Anchor(
+                left: true,
+                top: true,
+                right: true,
+                bottom: true,
+            ),
+            multiline: true,
+        ),
+        Control(
+            name: "label1",
+            kind: Label,
+            x: 8.0,
+            y: 346.0,
+            width: 540.0,
+            height: 20.0,
+            text: "",
+            visible: true,
+            enabled: true,
+            anchor: Anchor(
+                left: true,
+                top: false,
+                right: true,
+                bottom: true,
+            ),
+        ),
+    ],
+    menu: [
+        MenuItem(
+            name: "menu_file",
+            text: "File",
+            children: [
+                MenuItem(name: "menu_new", text: "New", click: Some("menu_new_click")),
+                MenuItem(name: "menu_open", text: "Open", click: Some("menu_open_click")),
+                MenuItem(name: "menu_save", text: "Save", click: Some("menu_save_click")),
+                MenuItem(name: "menu_quit", text: "Quit", click: Some("menu_quit_click")),
+            ],
+        ),
+    ],
+)

@@ -800,3 +800,45 @@ fn examples_dialog_and_creation() {
         app.i18n.missing_keys()
     );
 }
+
+/// Le dossier `exemples/` du dépôt est à jour avec le générateur d'exemples.
+#[test]
+fn examples_folder_is_up_to_date() {
+    let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../exemples");
+    let tmp = tempfile::tempdir().unwrap();
+    for lang in vrs_app::EXPORT_LANGUAGES {
+        vrs_app::export_examples(tmp.path(), lang).unwrap();
+    }
+    fn files(root: &std::path::Path) -> Vec<std::path::PathBuf> {
+        let mut out = Vec::new();
+        let mut stack = vec![root.to_path_buf()];
+        while let Some(d) = stack.pop() {
+            for e in std::fs::read_dir(&d).unwrap().flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    if p.file_name().is_some_and(|n| n != "target") {
+                        stack.push(p);
+                    }
+                } else if !p.to_string_lossy().ends_with(".bak")
+                    && p.file_name()
+                        .is_some_and(|n| n != "README.md" || p.parent() != Some(root))
+                {
+                    out.push(p.strip_prefix(root).unwrap().to_path_buf());
+                }
+            }
+        }
+        out.sort();
+        out
+    }
+    let generated = files(tmp.path());
+    assert!(!generated.is_empty());
+    for f in &generated {
+        let expected = std::fs::read(tmp.path().join(f)).unwrap();
+        let actual = std::fs::read(repo.join(f)).unwrap_or_default();
+        assert!(
+            expected == actual,
+            "exemples/{} n'est pas à jour : cargo run -p vrs-app --bin vrs-export-examples -- exemples",
+            f.display()
+        );
+    }
+}
