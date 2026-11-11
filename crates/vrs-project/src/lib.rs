@@ -7,7 +7,7 @@
 //! Ces fichiers ne sont pas nécessaires pour compiler : `cargo build` fonctionne
 //! sans VRS. Un dossier Cargo existant peut aussi être ouvert tel quel.
 
-pub mod examples;
+pub mod catalog;
 mod templates;
 mod tree;
 

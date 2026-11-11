@@ -35,9 +35,20 @@ designer, or create a fresh copy with **File → Examples…**.
 | Advanced | `TicTacToe` | game state, winner detection, `&mut` to a field |
 | Advanced | `Notepad` | multiline TextBox, menu bar, files with `std::fs` |
 
-These folders are generated: after changing the examples in
-`crates/vrs-project/src/examples.rs`, run
-`cargo run -p vrs-app --bin vrs-export-examples -- exemples`.
+### How the IDE gets the examples
+
+The IDE does not contain the examples. **File → Examples…** reads
+[`index.toml`](index.toml) from this folder on GitHub, then downloads only the
+chosen example, in the IDE language (or the closest one).
+
+To **add an example** (no recompilation of VRS needed):
+1. add the project folder in `en-US/` and `fr-CA/` (same file names);
+2. add an `[[example]]` entry in `index.toml` (id, level, folder, title,
+   description, files);
+3. push to GitHub: the example appears in the IDE.
+
+The catalog source can be changed in **Tools → Settings** (web address or
+local folder).
 
 ---
 
@@ -73,6 +84,18 @@ les fenêtres dans le concepteur, ou en créer une copie avec
 | Avancé | `TicTacToe` | état du jeu, détection du gagnant, `&mut` vers un champ |
 | Avancé | `Notepad` | TextBox multiligne, barre de menus, fichiers avec `std::fs` |
 
-Ces dossiers sont générés : après une modification des exemples dans
-`crates/vrs-project/src/examples.rs`, lancez
-`cargo run -p vrs-app --bin vrs-export-examples -- exemples`.
+### Comment l'IDE obtient les exemples
+
+L'IDE ne contient pas les exemples. **Fichier → Exemples…** lit
+[`index.toml`](index.toml) dans ce dossier sur GitHub, puis télécharge
+seulement l'exemple choisi, dans la langue de l'IDE (ou la plus proche).
+
+Pour **ajouter un exemple** (sans recompiler VRS) :
+1. ajoutez le dossier du projet dans `en-US/` et `fr-CA/` (mêmes noms de
+   fichiers) ;
+2. ajoutez une entrée `[[example]]` dans `index.toml` (id, niveau, dossier,
+   titre, description, fichiers) ;
+3. poussez sur GitHub : l'exemple apparaît dans l'IDE.
+
+La source du catalogue se change dans **Outils → Paramètres** (adresse web
+ou dossier local).

@@ -50,6 +50,7 @@ quote = "1"
 proc-macro2 = { version = "1", features = ["span-locations"] }
 prettyplease = "0.2"
 tempfile = "3"
+ureq = "3"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

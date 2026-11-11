@@ -69,8 +69,9 @@
   `app.message_box("…")` shows a modal message (MsgBox). Every control has
   BackColor, ForeColor, font size and Anchor (it follows window resizing).
 - **Example projects** (File → Examples, or the start page), with texts and
-  comments in the IDE language; also in the repository under `exemples/`
-  (en-US and fr-CA). Beginner: Hello World (terminal and window), click
+  comments in the IDE language, downloaded on demand from the catalog
+  `exemples/index.toml` of the repository (en-US and fr-CA): new examples
+  need no recompilation. Beginner: Hello World (terminal and window), click
   counter, temperature converter, calculator, color picker, Rust quiz.
   Intermediate: to-do list, guess the number, two windows, stopwatch, address
   book. Advanced: tic-tac-toe, notepad. Each one builds without VRS.
@@ -187,8 +188,9 @@
   Chaque contrôle a BackColor, ForeColor, taille de police et Anchor (il
   suit le redimensionnement de la fenêtre).
 - **Projets d'exemple** (Fichier → Exemples, ou la page de démarrage), avec
-  textes et commentaires dans la langue de l'IDE ; aussi dans le dépôt sous
-  `exemples/` (en-US et fr-CA). Débutant : Hello World (terminal et fenêtre),
+  textes et commentaires dans la langue de l'IDE, téléchargés à la demande
+  depuis le catalogue `exemples/index.toml` du dépôt (en-US et fr-CA) : un
+  nouvel exemple ne demande aucune recompilation. Débutant : Hello World (terminal et fenêtre),
   compteur de clics, convertisseur de température, calculatrice, sélecteur de
   couleur, quiz Rust. Modéré : liste de tâches, devine le nombre, deux
   fenêtres, chronomètre, carnet d'adresses. Avancé : tic-tac-toe, bloc-notes.

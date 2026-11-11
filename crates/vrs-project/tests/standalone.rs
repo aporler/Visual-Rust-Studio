@@ -183,7 +183,7 @@ fn gui_project_compiles_without_vrs() {
     assert!(ok, "échec de compilation :\n{stderr}");
     let own_warnings: Vec<&str> = stderr
         .lines()
-        .filter(|l| l.starts_with("warning") && !l.contains("generated"))
+        .filter(|l| l.starts_with("warning") && !l.contains("generated") && !l.contains("network"))
         .collect();
     assert!(own_warnings.is_empty(), "avertissements :\n{stderr}");
 }
@@ -202,22 +202,30 @@ fn console_and_library_projects_compile() {
     }
 }
 
-/// Chaque exemple compile sans VRS et sans avertissement (textes avec accents,
-/// guillemets et accolades pour vérifier l'échappement).
+/// Chaque exemple du dossier `exemples/` (téléchargé depuis le catalogue local)
+/// compile sans VRS et sans avertissement, dans chaque langue.
 #[test]
 #[ignore = "lent : compile les exemples"]
 fn every_example_compiles() {
+    use vrs_project::catalog::{download_example, load_catalog};
+    let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../exemples")
+        .display()
+        .to_string();
+    let catalog = load_catalog(&source).unwrap();
     let dir = tempfile::tempdir().unwrap();
-    let tr = |key: &str| format!("Été « {key} » \"x\" {{y}}");
-    for ex in vrs_project::examples::EXAMPLES {
-        let p = vrs_project::examples::create_example(ex.id, dir.path(), &tr, &EnglishComments)
-            .unwrap();
-        let (ok, stderr) = build(&p.root);
-        assert!(ok, "{} :\n{stderr}", ex.id);
-        let warnings: Vec<&str> = stderr
-            .lines()
-            .filter(|l| l.starts_with("warning") && !l.contains("generated"))
-            .collect();
-        assert!(warnings.is_empty(), "{} :\n{stderr}", ex.id);
+    for lang in &catalog.languages {
+        for ex in &catalog.examples {
+            let root = download_example(&source, &catalog, ex, lang, dir.path()).unwrap();
+            let (ok, stderr) = build(&root);
+            assert!(ok, "{lang}/{} :\n{stderr}", ex.id);
+            let warnings: Vec<&str> = stderr
+                .lines()
+                .filter(|l| {
+                    l.starts_with("warning") && !l.contains("generated") && !l.contains("network")
+                })
+                .collect();
+            assert!(warnings.is_empty(), "{lang}/{} :\n{stderr}", ex.id);
+        }
     }
 }

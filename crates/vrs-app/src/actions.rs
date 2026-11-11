@@ -167,14 +167,7 @@ impl VrsApp {
             }
             Command::DebugStart => self.start_debugging(),
             Command::ImportImage(control) => self.import_image(control),
-            Command::ShowExamples => {
-                let location = self
-                    .settings
-                    .projects_dir
-                    .clone()
-                    .unwrap_or_else(vrs_settings::default_projects_dir);
-                self.dialogs.examples = Some((0, location.display().to_string()));
-            }
+            Command::ShowExamples => self.show_examples(),
             Command::RenameForm(name) => self.dialogs.rename_form = Some((name.clone(), name)),
             Command::Debug(a) => self.debug_action(a),
             Command::ToggleBreakpoint => {
@@ -361,32 +354,53 @@ impl VrsApp {
         }
     }
 
-    /// Crée un projet d'exemple et l'ouvre.
-    pub fn create_example(&mut self, id: &str, parent: &Path) {
-        let comments = I18nComments(&self.i18n);
-        let i18n = &self.i18n;
-        let tr = |k: &str| i18n.tr(k);
-        match vrs_project::examples::create_example(id, parent, &tr, &comments) {
-            Ok(p) => {
-                self.created_here.insert(p.root.clone());
-                self.settings.trust(&p.root);
-                self.settings.projects_dir = Some(parent.to_path_buf());
-                let name = p.name().to_owned();
-                let main = (!p.is_gui()).then(|| p.root.join("src/main.rs"));
-                self.set_project(p);
-                if let Some(m) = main {
-                    self.open_file(&m, None);
-                }
-                self.status = self
-                    .i18n
-                    .trf("status-project-created", &[("name", name.into())]);
+    /// Ouvre la fenêtre des exemples et télécharge le catalogue en arrière-plan.
+    pub fn show_examples(&mut self) {
+        let source = self
+            .settings
+            .examples_url
+            .clone()
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or_else(|| vrs_project::catalog::DEFAULT_CATALOG.to_owned());
+        let location = self
+            .settings
+            .projects_dir
+            .clone()
+            .unwrap_or_else(vrs_settings::default_projects_dir);
+        let (tx, rx) = std::sync::mpsc::channel();
+        let ctx = self.repaint_ctx.clone();
+        let src = source.clone();
+        std::thread::spawn(move || {
+            let _ = tx.send(vrs_project::catalog::load_catalog(&src));
+            if let Some(c) = ctx {
+                c.request_repaint();
             }
-            Err(e) => {
-                let msg = self
-                    .i18n
-                    .trf("error-create-project", &[("error", e.to_string().into())]);
-                self.error(msg);
-            }
+        });
+        self.dialogs.examples = Some(crate::app::ExamplesDialog {
+            source,
+            catalog: None,
+            loading: Some(rx),
+            selected: 0,
+            location: location.display().to_string(),
+            downloading: None,
+            error: None,
+        });
+    }
+
+    /// Ouvre un exemple téléchargé.
+    pub fn open_downloaded_example(&mut self, root: &Path, source: &str, parent: &Path) {
+        // Exemples officiels ou locaux : code connu, projet approuvé.
+        let official = source == vrs_project::catalog::DEFAULT_CATALOG
+            || !(source.starts_with("http://") || source.starts_with("https://"));
+        if official {
+            self.created_here.insert(root.to_path_buf());
+            self.settings.trust(root);
+        }
+        self.settings.projects_dir = Some(parent.to_path_buf());
+        self.open_project_at(root);
+        let main = root.join("src/main.rs");
+        if self.project.as_ref().is_some_and(|p| !p.is_gui()) && main.is_file() {
+            self.open_file(&main, None);
         }
     }
 

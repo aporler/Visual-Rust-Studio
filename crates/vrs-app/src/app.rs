@@ -52,6 +52,17 @@ pub struct SettingsDialog {
     pub debugger_path: String,
 }
 
+/// Fenêtre « Projets d'exemple » : catalogue et téléchargement en arrière-plan.
+pub struct ExamplesDialog {
+    pub source: String,
+    pub catalog: Option<Result<vrs_project::catalog::Catalog, String>>,
+    pub loading: Option<std::sync::mpsc::Receiver<Result<vrs_project::catalog::Catalog, String>>>,
+    pub selected: usize,
+    pub location: String,
+    pub downloading: Option<std::sync::mpsc::Receiver<Result<PathBuf, String>>>,
+    pub error: Option<String>,
+}
+
 /// Action en attente de confirmation (projet non approuvé).
 #[derive(Clone, Debug)]
 pub struct TrustRequest {
@@ -65,8 +76,8 @@ pub struct Dialogs {
     pub new_project: Option<NewProjectDialog>,
     pub settings: Option<SettingsDialog>,
     pub add_form: Option<String>,
-    /// Projets d'exemple : (exemple sélectionné, emplacement).
-    pub examples: Option<(usize, String)>,
+    /// Projets d'exemple (catalogue téléchargé).
+    pub examples: Option<ExamplesDialog>,
     /// Renommage d'une fenêtre : (ancien nom, nouveau nom).
     pub rename_form: Option<(String, String)>,
     pub trust: Option<TrustRequest>,

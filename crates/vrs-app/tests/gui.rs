@@ -764,81 +764,54 @@ fn rename_form_from_ide() {
     assert!(main_rs.contains("pub fn startup_form() -> Principale"));
 }
 
-/// Projets d'exemple : la liste s'affiche, chaque exemple se crée et s'ouvre.
+/// Projets d'exemple : catalogue lu depuis le dossier `exemples/` du dépôt,
+/// téléchargement et ouverture de l'exemple choisi.
 #[test]
-fn examples_dialog_and_creation() {
+fn examples_catalog_and_download() {
+    use std::time::{Duration, Instant};
     let dir = tempfile::tempdir().unwrap();
-    let mut h = harness(app_in(dir.path(), "fr-CA"));
+    let mut app = app_in(dir.path(), "fr-CA");
+    let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../exemples");
+    app.settings.examples_url = Some(repo.display().to_string());
+    app.settings.projects_dir = Some(dir.path().to_path_buf());
+    let mut h = harness(app);
     h.run();
     run_cmd(&mut h, Command::ShowExamples);
-    h.run();
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while h.query_by_label_contains("Devine le nombre").is_none() && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(50));
+        h.step();
+    }
     assert!(h.query_by_label_contains("Devine le nombre").is_some());
-    assert!(
-        h.query_by_label_contains("Hello World (terminal)")
-            .is_some()
-    );
-    h.state_mut().dialogs.examples = None;
-    h.state_mut().create_example("hello-window", dir.path());
-    h.run();
-    assert!(matches!(h.state().active_tab(), Some(Tab::Designer(_))));
-    assert!(h.query_by_label("Bonjour, le monde !").is_some());
-    assert!(h.query_by_label("Fermer").is_some());
-    h.state_mut().create_example("hello-terminal", dir.path());
+    assert!(h.query_by_label_contains("Avancé").is_some());
+    // Choisir « Hello World (fenêtre) » puis Créer.
+    {
+        let dlg = h.state_mut().dialogs.examples.as_mut().unwrap();
+        let Some(Ok(catalog)) = &dlg.catalog else {
+            panic!()
+        };
+        dlg.selected = catalog
+            .examples
+            .iter()
+            .position(|e| e.id == "hello-window")
+            .unwrap();
+    }
+    h.step();
+    h.get_by_label("Créer").click();
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while h.state().project.is_none() && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(50));
+        h.step();
+    }
     h.run();
     let app = h.state();
-    let Some(Tab::Code(e)) = app.active_tab() else {
-        panic!()
-    };
-    assert!(
-        e.text.contains("println!(\"Bonjour, le monde !\")"),
-        "{}",
-        e.text
-    );
+    let p = app.project.as_ref().expect("exemple ouvert");
+    assert!(p.root.ends_with("HelloWorldWindow"), "{}", p.root.display());
+    assert!(matches!(app.active_tab(), Some(Tab::Designer(_))));
+    assert!(h.query_by_label("Fermer").is_some());
     assert!(
         app.i18n.missing_keys().is_empty(),
         "{:?}",
         app.i18n.missing_keys()
     );
-}
-
-/// Le dossier `exemples/` du dépôt est à jour avec le générateur d'exemples.
-#[test]
-fn examples_folder_is_up_to_date() {
-    let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../exemples");
-    let tmp = tempfile::tempdir().unwrap();
-    for lang in vrs_app::EXPORT_LANGUAGES {
-        vrs_app::export_examples(tmp.path(), lang).unwrap();
-    }
-    fn files(root: &std::path::Path) -> Vec<std::path::PathBuf> {
-        let mut out = Vec::new();
-        let mut stack = vec![root.to_path_buf()];
-        while let Some(d) = stack.pop() {
-            for e in std::fs::read_dir(&d).unwrap().flatten() {
-                let p = e.path();
-                if p.is_dir() {
-                    if p.file_name().is_some_and(|n| n != "target") {
-                        stack.push(p);
-                    }
-                } else if !p.to_string_lossy().ends_with(".bak")
-                    && p.file_name()
-                        .is_some_and(|n| n != "README.md" || p.parent() != Some(root))
-                {
-                    out.push(p.strip_prefix(root).unwrap().to_path_buf());
-                }
-            }
-        }
-        out.sort();
-        out
-    }
-    let generated = files(tmp.path());
-    assert!(!generated.is_empty());
-    for f in &generated {
-        let expected = std::fs::read(tmp.path().join(f)).unwrap();
-        let actual = std::fs::read(repo.join(f)).unwrap_or_default();
-        assert!(
-            expected == actual,
-            "exemples/{} n'est pas à jour : cargo run -p vrs-app --bin vrs-export-examples -- exemples",
-            f.display()
-        );
-    }
 }

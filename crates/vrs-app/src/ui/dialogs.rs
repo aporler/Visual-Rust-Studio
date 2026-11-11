@@ -288,6 +288,21 @@ fn settings(app: &mut VrsApp, ctx: &egui::Context) {
                 let configured = (!dlg.cargo_path.trim().is_empty())
                     .then(|| PathBuf::from(dlg.cargo_path.trim()));
                 ui.horizontal(|ui| {
+                    ui.label(app.i18n.tr("settings-examples-url"));
+                    let mut url = app.settings.examples_url.clone().unwrap_or_default();
+                    if ui
+                        .add(
+                            egui::TextEdit::singleline(&mut url)
+                                .hint_text(vrs_project::catalog::DEFAULT_CATALOG)
+                                .desired_width(300.0),
+                        )
+                        .on_hover_text(app.i18n.tr("settings-examples-url-hint"))
+                        .changed()
+                    {
+                        app.settings.examples_url = (!url.trim().is_empty()).then_some(url);
+                    }
+                });
+                ui.horizontal(|ui| {
                     ui.label(app.i18n.tr("settings-debugger-path"));
                     ui.add(
                         egui::TextEdit::singleline(&mut dlg.debugger_path)
@@ -418,82 +433,174 @@ fn add_form(app: &mut VrsApp, ctx: &egui::Context) {
 }
 
 fn examples(app: &mut VrsApp, ctx: &egui::Context) {
-    use vrs_project::examples::{EXAMPLES, Level};
-    let Some((mut selected, mut location)) = app.dialogs.examples.take() else {
+    let Some(mut dlg) = app.dialogs.examples.take() else {
         return;
     };
+    // Résultats des tâches en arrière-plan.
+    if let Some(rx) = &dlg.loading
+        && let Ok(r) = rx.try_recv()
+    {
+        dlg.catalog = Some(r);
+        dlg.loading = None;
+    }
+    let mut downloaded = None;
+    if let Some(rx) = &dlg.downloading
+        && let Ok(r) = rx.try_recv()
+    {
+        dlg.downloading = None;
+        match r {
+            Ok(root) => downloaded = Some(root),
+            Err(e) => dlg.error = Some(e),
+        }
+    }
+    if dlg.loading.is_some() || dlg.downloading.is_some() {
+        ctx.request_repaint_after(std::time::Duration::from_millis(100));
+    }
+    let lang = app.i18n.active().to_string();
     let mut keep = true;
     let mut create = None;
+    let mut retry = false;
     Modal::new(egui::Id::unique("vrs-examples")).show(ctx, |ui| {
         ui.set_width(600.0);
         ui.heading(app.i18n.tr("examples-title"));
         ui.separator();
-        egui::ScrollArea::vertical()
-            .max_height(440.0)
-            .show(ui, |ui| {
-                for level in [Level::Beginner, Level::Intermediate, Level::Advanced] {
-                    ui.strong(app.i18n.tr(level.i18n_key()));
-                    for (i, ex) in EXAMPLES
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, e)| e.level == level)
-                    {
-                        let r = ui.radio_value(
-                            &mut selected,
-                            i,
-                            RichText::new(app.i18n.tr(&ex.title_key())).strong(),
-                        );
-                        if r.double_clicked() {
-                            create = Some(i);
-                        }
-                        ui.indent(("ex", i), |ui| ui.weak(app.i18n.tr(&ex.desc_key())));
-                    }
-                    ui.add_space(6.0);
+        match &dlg.catalog {
+            None => {
+                ui.horizontal(|ui| {
+                    ui.spinner();
+                    ui.label(app.i18n.tr("examples-loading"));
+                });
+                ui.weak(&dlg.source);
+            }
+            Some(Err(e)) => {
+                ui.colored_label(
+                    ui.visuals().error_fg_color,
+                    app.i18n
+                        .trf("examples-error", &[("error", e.clone().into())]),
+                );
+                if ui.button(app.i18n.tr("examples-retry")).clicked() {
+                    retry = true;
                 }
-            });
+            }
+            Some(Ok(catalog)) => {
+                egui::ScrollArea::vertical()
+                    .max_height(440.0)
+                    .show(ui, |ui| {
+                        let mut levels: Vec<&str> = Vec::new();
+                        for ex in &catalog.examples {
+                            if !levels.contains(&ex.level.as_str()) {
+                                levels.push(&ex.level);
+                            }
+                        }
+                        for level in levels {
+                            let key = format!("examples-{level}");
+                            let title = app
+                                .i18n
+                                .try_tr(&key, None)
+                                .unwrap_or_else(|| level.to_owned());
+                            ui.strong(title);
+                            for (i, ex) in catalog
+                                .examples
+                                .iter()
+                                .enumerate()
+                                .filter(|(_, e)| e.level == level)
+                            {
+                                let r = ui.radio_value(
+                                    &mut dlg.selected,
+                                    i,
+                                    RichText::new(ex.title_in(&lang)).strong(),
+                                );
+                                if r.double_clicked() {
+                                    create = Some(i);
+                                }
+                                ui.indent(("ex", i), |ui| ui.weak(ex.description_in(&lang)));
+                            }
+                            ui.add_space(6.0);
+                        }
+                    });
+            }
+        }
         ui.separator();
         ui.horizontal(|ui| {
             ui.label(app.i18n.tr("newproj-location"));
-            ui.add(egui::TextEdit::singleline(&mut location).desired_width(360.0));
+            ui.add(egui::TextEdit::singleline(&mut dlg.location).desired_width(360.0));
             if ui.button(app.i18n.tr("button-browse")).clicked()
                 && let Some(dir) = rfd::FileDialog::new()
                     .set_title(app.i18n.tr("newproj-choose-folder"))
-                    .set_directory(&location)
+                    .set_directory(&dlg.location)
                     .pick_folder()
             {
-                location = dir.display().to_string();
+                dlg.location = dir.display().to_string();
             }
         });
         ui.weak(app.i18n.tr("examples-hint"));
+        if let Some(e) = &dlg.error {
+            ui.colored_label(
+                ui.visuals().error_fg_color,
+                app.i18n
+                    .trf("examples-error", &[("error", e.clone().into())]),
+            );
+        }
         ui.separator();
         buttons_right(ui, |ui| {
             if ui.button(app.i18n.tr("button-cancel")).clicked() {
                 keep = false;
             }
+            let ready = matches!(dlg.catalog, Some(Ok(_))) && dlg.downloading.is_none();
             if ui
                 .add_enabled(
-                    !location.trim().is_empty(),
+                    ready && !dlg.location.trim().is_empty(),
                     egui::Button::new(app.i18n.tr("button-create")),
                 )
                 .clicked()
             {
-                create = Some(selected);
+                create = Some(dlg.selected);
+            }
+            if dlg.downloading.is_some() {
+                ui.spinner();
+                ui.label(app.i18n.tr("examples-downloading"));
             }
         });
     });
-    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) && dlg.downloading.is_none() {
         keep = false;
     }
-    match create {
-        Some(i) => {
-            let id = EXAMPLES[i].id;
-            let parent = PathBuf::from(location.trim());
-            if std::fs::create_dir_all(&parent).is_ok() {
-                app.create_example(id, &parent);
-            }
-        }
-        None if keep => app.dialogs.examples = Some((selected, location)),
-        None => {}
+    if retry {
+        app.show_examples();
+        return;
+    }
+    if let (Some(i), Some(Ok(catalog))) = (create, &dlg.catalog)
+        && dlg.downloading.is_none()
+        && let Some(ex) = catalog.examples.get(i).cloned()
+    {
+        let parent = PathBuf::from(dlg.location.trim());
+        let (tx, rx) = std::sync::mpsc::channel();
+        let (source, catalog, lang, ctx2) = (
+            dlg.source.clone(),
+            catalog.clone(),
+            lang.clone(),
+            ctx.clone(),
+        );
+        std::thread::spawn(move || {
+            let r = std::fs::create_dir_all(&parent)
+                .map_err(|e| e.to_string())
+                .and_then(|_| {
+                    vrs_project::catalog::download_example(&source, &catalog, &ex, &lang, &parent)
+                });
+            let _ = tx.send(r);
+            ctx2.request_repaint();
+        });
+        dlg.error = None;
+        dlg.downloading = Some(rx);
+    }
+    if let Some(root) = downloaded {
+        let source = dlg.source.clone();
+        let parent = PathBuf::from(dlg.location.trim());
+        app.open_downloaded_example(&root, &source, &parent);
+        return;
+    }
+    if keep {
+        app.dialogs.examples = Some(dlg);
     }
 }
 

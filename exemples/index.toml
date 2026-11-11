@@ -1,0 +1,122 @@
+# Catalogue of the Visual Rust Studio examples / Catalogue des exemples de Visual Rust Studio.
+#
+# Read by the IDE (File → Examples). To add an example: add its folder in each
+# language directory and an [[example]] entry below; no recompilation needed.
+# Lu par l'IDE (Fichier → Exemples). Pour ajouter un exemple : ajoutez son
+# dossier dans chaque dossier de langue et une entrée [[example]] ci-dessous ;
+# aucune recompilation n'est nécessaire.
+
+version = 1
+languages = ["en-US", "fr-CA"]
+
+[[example]]
+id = "hello-terminal"
+level = "beginner"
+folder = "HelloWorldTerminal"
+title = { en-US = "Hello World (terminal)", fr-CA = "Hello World (terminal)" }
+description = { en-US = "Your first Rust program: it writes a line in the console.", fr-CA = "Votre premier programme Rust : il écrit une ligne dans la console." }
+files = [".gitignore", "Cargo.toml", "HelloWorldTerminal.vrsproj", "README.md", "src/main.rs"]
+
+[[example]]
+id = "hello-window"
+level = "beginner"
+folder = "HelloWorldWindow"
+title = { en-US = "Hello World (window)", fr-CA = "Hello World (fenêtre)" }
+description = { en-US = "A window with a text and a button that closes the application.", fr-CA = "Une fenêtre avec un texte et un bouton qui ferme l'application." }
+files = [".gitignore", "Cargo.toml", "HelloWorldWindow.vrsproj", "README.md", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "counter"
+level = "beginner"
+folder = "ClickCounter"
+title = { en-US = "Click counter", fr-CA = "Compteur de clics" }
+description = { en-US = "A window variable (self.data) increases on each click; a second button resets it.", fr-CA = "Une variable de fenêtre (self.data) augmente à chaque clic ; un deuxième bouton la remet à zéro." }
+files = [".gitignore", "Cargo.toml", "ClickCounter.vrsproj", "README.md", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "temperature"
+level = "beginner"
+folder = "TemperatureConverter"
+title = { en-US = "Temperature converter", fr-CA = "Convertisseur de température" }
+description = { en-US = "Reads a text box, converts the text to a number and handles input errors (°C to °F).", fr-CA = "Lit une zone de texte, convertit le texte en nombre et gère les erreurs de saisie (°C vers °F)." }
+files = [".gitignore", "Cargo.toml", "README.md", "TemperatureConverter.vrsproj", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "calculator"
+level = "beginner"
+folder = "Calculator"
+title = { en-US = "Calculator", fr-CA = "Calculatrice" }
+description = { en-US = "Two numbers, an operation chosen in a ComboBox, match on the selection, and a message box for division by zero.", fr-CA = "Deux nombres, une opération choisie dans une ComboBox, un match sur la sélection et une boîte de message pour la division par zéro." }
+files = [".gitignore", "Calculator.vrsproj", "Cargo.toml", "README.md", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "color"
+level = "beginner"
+folder = "ColorPicker"
+title = { en-US = "Color picker", fr-CA = "Sélecteur de couleur" }
+description = { en-US = "Three sliders (red, green, blue) change the background color of a panel: ValueChanged events and the BackColor property.", fr-CA = "Trois curseurs (rouge, vert, bleu) changent la couleur de fond d'un panneau : événements ValueChanged et propriété BackColor." }
+files = [".gitignore", "Cargo.toml", "ColorPicker.vrsproj", "README.md", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "quiz"
+level = "beginner"
+folder = "RustQuiz"
+title = { en-US = "Rust quiz", fr-CA = "Quiz Rust" }
+description = { en-US = "A multiple-choice quiz with RadioButtons, a constant array of questions and a final score.", fr-CA = "Un questionnaire à choix multiples avec des RadioButton, un tableau constant de questions et un score final." }
+files = [".gitignore", "Cargo.toml", "README.md", "RustQuiz.vrsproj", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "todo"
+level = "intermediate"
+folder = "TodoList"
+title = { en-US = "To-do list", fr-CA = "Liste de tâches" }
+description = { en-US = "Adds and removes items in a list (Vec<String>), with a small helper method.", fr-CA = "Ajoute et supprime des éléments dans une liste (Vec<String>), avec une petite méthode utilitaire." }
+files = [".gitignore", "Cargo.toml", "README.md", "TodoList.vrsproj", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "guess"
+level = "intermediate"
+folder = "GuessTheNumber"
+title = { en-US = "Guess the number", fr-CA = "Devine le nombre" }
+description = { en-US = "A secret number, \"higher / lower\" hints, a try counter and a message box when you win.", fr-CA = "Un nombre secret, des indices « plus grand / plus petit », un compteur d'essais et une boîte de message à la victoire." }
+files = [".gitignore", "Cargo.toml", "GuessTheNumber.vrsproj", "README.md", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "two-windows"
+level = "intermediate"
+folder = "TwoWindows"
+title = { en-US = "Two windows", fr-CA = "Deux fenêtres" }
+description = { en-US = "Form1 opens a modal dialog (Form2) that asks for your name, then reads the answer.", fr-CA = "Form1 ouvre une boîte de dialogue modale (Form2) qui demande votre nom, puis lit la réponse." }
+files = [".gitignore", "Cargo.toml", "README.md", "TwoWindows.vrsproj", "forms/Form1.vrsform", "forms/Form2.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/form2.rs", "src/forms/form2_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "stopwatch"
+level = "intermediate"
+folder = "Stopwatch"
+title = { en-US = "Stopwatch", fr-CA = "Chronomètre" }
+description = { en-US = "A Timer raises Tick every 100 ms: start, stop, reset and a progress bar for the seconds.", fr-CA = "Un Timer déclenche Tick toutes les 100 ms : démarrer, arrêter, remettre à zéro, et une barre de progression pour les secondes." }
+files = [".gitignore", "Cargo.toml", "README.md", "Stopwatch.vrsproj", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "address-book"
+level = "intermediate"
+folder = "AddressBook"
+title = { en-US = "Address book", fr-CA = "Carnet d'adresses" }
+description = { en-US = "A contact list; a second window (modal dialog) asks for the name and phone number.", fr-CA = "Une liste de contacts ; une deuxième fenêtre (boîte de dialogue modale) demande le nom et le téléphone." }
+files = [".gitignore", "AddressBook.vrsproj", "Cargo.toml", "README.md", "forms/Form1.vrsform", "forms/Form2.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/form2.rs", "src/forms/form2_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "tic-tac-toe"
+level = "advanced"
+folder = "TicTacToe"
+title = { en-US = "Tic-tac-toe", fr-CA = "Tic-tac-toe" }
+description = { en-US = "A two-player game with 9 buttons: board state, winner detection and a helper that returns a button by index.", fr-CA = "Un jeu à deux joueurs avec 9 boutons : état de la grille, détection du gagnant et une méthode qui renvoie un bouton par son index." }
+files = [".gitignore", "Cargo.toml", "README.md", "TicTacToe.vrsproj", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]
+
+[[example]]
+id = "notepad"
+level = "advanced"
+folder = "Notepad"
+title = { en-US = "Notepad", fr-CA = "Bloc-notes" }
+description = { en-US = "A multiline text box, a File menu (New, Open, Save, Quit) and reading/writing a file with std::fs.", fr-CA = "Une zone de texte multiligne, un menu Fichier (Nouveau, Ouvrir, Enregistrer, Quitter) et la lecture/écriture d'un fichier avec std::fs." }
+files = [".gitignore", "Cargo.toml", "Notepad.vrsproj", "README.md", "forms/Form1.vrsform", "src/forms/form1.rs", "src/forms/form1_designer.rs", "src/forms/mod.rs", "src/main.rs", "src/vrs/mod.rs"]

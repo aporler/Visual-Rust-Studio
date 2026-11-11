@@ -73,6 +73,8 @@ pub struct Settings {
     pub check_on_save: bool,
     /// Utiliser rust-analyzer (diagnostics en direct, autocomplétion, définitions).
     pub lsp_enabled: bool,
+    /// Source du catalogue d'exemples (adresse web ou dossier) ; `None` : dépôt officiel.
+    pub examples_url: Option<String>,
     pub designer: DesignerSettings,
     pub build: BuildSettings,
     /// Répertoire par défaut des nouveaux projets.
@@ -94,6 +96,7 @@ impl Default for Settings {
             format_on_save: true,
             check_on_save: true,
             lsp_enabled: true,
+            examples_url: None,
             designer: DesignerSettings::default(),
             build: BuildSettings::default(),
             projects_dir: None,
